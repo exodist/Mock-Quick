@@ -53,13 +53,15 @@ CLASS METHODS
     allows for objects with attributes named 'new', 'import', and
     'AUTOLOAD'.
 
-    $obj = $class->new( $hashref ) =item $obj = $class->new( %hash ) =item
+    $obj = $class->new( $hashref )
+    $obj = $class->new( %hash )
     $obj = $class->new()
         The object constructor. Creates a new instance of an object with the
         provided hash. If no hash is provided an anonymous one will be
         created.
 
-    $class->import() =item $class->import( $quick_create_name )
+    $class->import()
+    $class->import( $quick_create_name )
         Automatically called when you use Object::Quick. The optional
         argument is the name you want to use for the quick create method.
 

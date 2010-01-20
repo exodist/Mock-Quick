@@ -94,7 +94,7 @@ attribute of the object.
 
 #}}}
 
-our $VERSION = 0.001;
+our $VERSION = 0.002;
 our $AUTOLOAD;
 
 # Keeping this sub in a variable so we do not have an inaccessible hash
@@ -149,8 +149,8 @@ Chad Granum L<exodist7@gmail.com>
 
 Copyright (C) 2010 Chad Granum
 
-App-PDT is free software; Standard perl licence.
+Object-Quick is free software; Standard perl licence.
 
-App-PDT is distributed in the hope that it will be useful, but WITHOUT
+Object-Quick is distributed in the hope that it will be useful, but WITHOUT
 ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE.  See the license for more details.

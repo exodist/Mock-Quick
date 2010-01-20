@@ -66,13 +66,16 @@ objects with attributes named 'new', 'import', and 'AUTOLOAD'.
 =over 4
 
 =item $obj = $class->new( $hashref )
+
 =item $obj = $class->new( %hash )
+
 =item $obj = $class->new()
 
 The object constructor. Creates a new instance of an object with the provided
 hash. If no hash is provided an anonymous one will be created.
 
 =item $class->import()
+
 =item $class->import( $quick_create_name )
 
 Automatically called when you use Object::Quick. The optional argument is the
@@ -94,7 +97,7 @@ attribute of the object.
 
 #}}}
 
-our $VERSION = 0.002;
+our $VERSION = 0.003;
 our $AUTOLOAD;
 
 # Keeping this sub in a variable so we do not have an inaccessible hash

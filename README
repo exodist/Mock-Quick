@@ -77,9 +77,10 @@ AUTHORS
 COPYRIGHT
     Copyright (C) 2010 Chad Granum
 
-    App-PDT is free software; Standard perl licence.
+    Object-Quick is free software; Standard perl licence.
 
-    App-PDT is distributed in the hope that it will be useful, but WITHOUT
-    ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-    FITNESS FOR A PARTICULAR PURPOSE. See the license for more details.
+    Object-Quick is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the license for
+    more details.
 

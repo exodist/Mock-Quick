@@ -6,13 +6,18 @@ use warnings;
 
 =head1 NAME
 
-Object-Quick - Quickly turn a hash into an object.
+Object::Quick - Quickly turn a hash into an object.
 
 =head1 DESCRIPTION
 
 An object created from a hash. Every hash key can be used as a method to
 get/set the hash element. Creation of a new key is as simple as $obj->newkey(
 $val ). Essentially an object oriented interface to a hash.
+
+Actual methods can be added to individual objects as well. Note these methods
+are object specific, not class specific. Adding a method to one object will not
+add it to others. There are some class methods in the works to help manage
+methods.
 
 =head1 WHERE IS THIS USEFUL
 
@@ -32,7 +37,7 @@ that return more objects.
     my $obj = obj( a => 'a' );
     print $obj->a; #prints 'a'
 
-    $obj = obj( a => obj( a => 'a' );
+    $obj = obj( a => obj( a => 'a' ));
     print $obj->a->a; #prints 'a'
 
     # You can create objects with attriubtes sharing the names of class-methods
@@ -45,6 +50,16 @@ that return more objects.
 
     #You can create objets using the package as well:
     $obj = Object::Quick->new();
+
+    #Add a method to the object:
+    $obj->do_stuff( 'method', sub { my $self = shift; $self->ran( @_ ) });
+    $obj->do_stuff( 'Blah' );
+    print $obj->ran; #prints 'Blah'
+
+    #Clear a method
+    $obj->do_stuff( 'method', undef );
+    $obj->do_stuff( 'Blah' );
+    print $obj->do_stuff; #prints 'Blah'
 
 =head1 EXPORTED FUNCTIONS
 
@@ -97,7 +112,7 @@ attribute of the object.
 
 #}}}
 
-our $VERSION = 0.003;
+our $VERSION = 0.005;
 our $AUTOLOAD;
 
 # Keeping this sub in a variable so we do not have an inaccessible hash
@@ -105,6 +120,32 @@ our $AUTOLOAD;
 our $PARAM = sub {
     my $self = shift;
     my $param = shift;
+    my ( $set_vm, $val ) = @_;
+    $set_vm = $set_vm
+           && $set_vm =~ m/^method$/i
+           && @_ > 1
+           && (
+                ( !defined( $val ))
+            ||
+                ( ref( $val ) && ref( $val ) eq 'CODE' )
+           );
+
+    my $current = $self->{ $param };
+    my $vmethod = ($current && eval { $current->isa( $VM_CLASS ) }) ? 1 : 0;
+
+    return $current->( $self, @_ )
+        if ( $vmethod && !$set_vm );
+
+    if ( $set_vm ) {
+        if ( defined $val ) {
+            $self->{ $param } = bless( $val, $VM_CLASS );
+            return !! $self->{ $param };
+        }
+        else {
+            delete $self->{ $param };
+            return ! exists $self->{ $param };
+        }
+    }
 
     ($self->{ $param }) = @_ if @_;
     return $self->{ $param };
@@ -128,7 +169,11 @@ sub import {
 sub new {
     my $class = shift;
     return $class->$PARAM( 'new', @_ ) if ref( $class );
-    return bless( @_ ? @_ > 1 ? { @_ } : $_[0] : {}, $class );
+    my ( $proto, %meta ) = @_;
+    my $methods = { map { $_ => 1 } @{ delete $meta{ methods }}
+        if $meta{ methods };
+
+    return bless( [ $proto, $methods, \%meta ], $class );
 }
 
 sub AUTOLOAD {
@@ -140,6 +185,62 @@ sub AUTOLOAD {
     return $self->$PARAM( $param, @_ );
 }
 
+our %CLASS_METHODS = (
+    clone => sub {
+        my $class = shift;
+        my ($one) = @_;
+        return unless $one;
+        return bless( { %$one }, $class );
+    },
+    methods => sub {
+        my $class = shift;
+        my ( $one ) = @_;
+        return unless $one;
+        return {
+            map {
+                my $val = $one->{ $_ };
+                eval { $val->isa( $VM_CLASS )} ? ( $_ => $val ) : ()
+            } keys %$one
+        };
+    },
+    add_methods => sub {
+        my $class = shift;
+        my ($one, %methods) = @_;
+        return unless $one and @_ > 2;
+
+        while ( my ( $m, $s ) = each %methods ) {
+            if (defined $one->{ $m }) {
+                warn "$m() has a value, or is already a method, not replacing.";
+                next;
+            }
+            $one->$m( 'method', $s );
+        }
+    },
+    instance => sub {
+        my $class = shift;
+        my ($one, @new) = @_;
+        return unless $one;
+        return bless( { %{$class->methods( $one )}, @new }, $class );
+    },
+    inherit => sub {
+        my $class = shift;
+        my ($one, $two) = @_;
+        return unless $one and $two;
+        $methods = $class->methods( $two );
+        $class->add_methods( $one, %$methods );
+    },
+    merge_methods => sub {},
+    class_methods => sub {},
+    
+);
+
+for my $method ( keys %CLASS_METHODS ) {
+    *$method = sub {
+        my $class = shift;
+        return $class->$PARAM( $method, @_ ) if ref( $class );
+        return $CLASS_METHODS->{ $method }->( $class, @_ );
+    };
+}
 1;
 
 __END__

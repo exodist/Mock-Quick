@@ -201,7 +201,7 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = 0.006;
+our $VERSION = 0.007;
 our $AUTOLOAD;
 our $VMC = 'Object::Quick::VMethod';
 our $CLEAR = \'CLEAR_REF';

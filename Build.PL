@@ -9,7 +9,8 @@ my $build = Module::Build->new(
     dist_author => 'Chad Granum <exodist7@gmail.com>',
     create_readme => 1,
     build_requires => {
-        'Test::More' => 0,
+        'Test::Simple' => 0.88,
+        'Test::Exception' => 0,
     },
 );
 

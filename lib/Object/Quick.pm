@@ -2,6 +2,7 @@ package Object::Quick;
 use strict;
 use warnings;
 use Object::Quick::VMethod;
+use Carp;
 
 #{{{ POD
 
@@ -207,7 +208,7 @@ sub import {
     my $class = shift;
     return $class->$PARAM( 'import', @_ ) if ref( $class );
 
-    my %args = map { $_ => 1 } grep { m/^-/ } @_;
+    my %args = map { $_ => 1 } grep { $_ && m/^-/ } @_;
 
     my @names = grep { $_ ? m/^-/ ? undef : $_ : undef } @_[0 .. 2];
     my @default = qw/obj method clear/;
@@ -216,11 +217,11 @@ sub import {
     }
 
     my %subs;
-
-    %subs = map {
-        $_ => sub { $class->$_( @_ )}
-    } keys %CLASS_METHODS
-        if $args{ -class } || $args { -all };
+    if ( $args{ -class } || $args { -all } ) {
+        for my $method ( keys %CLASS_METHODS ) {
+            $subs{ $method } = sub { $class->$method( @_ )};
+        }
+    }
 
     $subs{ $names[0] } = sub { $class->new( @_ )}
         if $names[0];
@@ -235,9 +236,12 @@ sub import {
     my $ref_base = $caller . '::';
 
     while ( my ( $name, $sub ) = each %subs ) {
-        no strict 'refs';
         my $ref = $ref_base . $name;
-        return if defined( &$ref );
+        if( defined( &$ref )){
+            warn( "Not overriding function: $ref" );
+            next;
+        }
+        no strict 'refs';
         *$ref = $sub;
     }
 
@@ -284,7 +288,7 @@ sub AUTOLOAD {
 
         while ( my ( $m, $s ) = each %methods ) {
             if (defined $one->{ $m }) {
-                warn "$m() has a value, or is already a method, not replacing.";
+                carp "$m() has a value, or is already a method, not replacing.";
                 next;
             }
             $one->$m( eval { $s->isa( $VMC )} ? $s : $VMC->new( $s ));
@@ -305,15 +309,17 @@ sub AUTOLOAD {
     },
     class_methods => sub {
         my $class = shift;
-        my $one = shift;
+        my ( $one ) = @_;
         return unless $one;
-        my %subs = map {
-            $_ => sub {
+        my %subs;
+        for my $method ( keys %CLASS_METHODS ) {
+            my $sub = $CLASS_METHODS{ $method };
+            $subs{ $method } = sub {
                 my $self = shift;
                 my $class = ref( $self );
-                $class->$_( $self, @_ );
-            }
-        } keys %CLASS_METHODS;
+                $class->$sub( $self, @_ );
+            };
+        }
         $class->add_methods( $one, %subs );
     },
 );

@@ -1,6 +1,7 @@
 package Object::Quick;
 use strict;
 use warnings;
+use Object::Quick::VMethod;
 
 #{{{ POD
 
@@ -28,11 +29,13 @@ that return more objects.
 
 =head1 SYNOPSYS
 
-    # Use Object-Quick with a quick-create function name.
-    # Whatever name you provide will be used to create a function that converts
-    # any hash into an object. Providing no name will not import any function.
+Use Object-Quick with a quick-create function names. Whatever names you provide
+will be used as names of shortcut functions.  Providing no name will not import
+any function.  First name is quick object creation, second name is the method
+maker, third name is the clear helper for clearing values.
 
-    use Object::Quick 'obj';
+    # Import the class, bring in shortcut functions
+    use Object::Quick qw/obj vm clear/;
 
     my $obj = obj( a => 'a' );
     print $obj->a; #prints 'a'
@@ -40,7 +43,7 @@ that return more objects.
     $obj = obj( a => obj( a => 'a' ));
     print $obj->a->a; #prints 'a'
 
-    # You can create objects with attriubtes sharing the names of class-methods
+    # You can create objects with attributes sharing the names of class-methods
     $obj = obj( new => 'new' );
     print $obj->new; #prints 'new'
 
@@ -52,31 +55,107 @@ that return more objects.
     $obj = Object::Quick->new();
 
     #Add a method to the object:
-    $obj->do_stuff( 'method', sub { my $self = shift; $self->ran( @_ ) });
+    $obj->do_stuff( vm { my $self = shift; $self->ran( @_ ) });
     $obj->do_stuff( 'Blah' );
     print $obj->ran; #prints 'Blah'
 
     #Clear a method
-    $obj->do_stuff( 'method', undef );
+    $obj->do_stuff( clear );
+    ok( !$obj->do_stuff );
     $obj->do_stuff( 'Blah' );
     print $obj->do_stuff; #prints 'Blah'
 
+You can accomplish the same without shortcuts, but it adds a lot of typing:
+
+    use Object::Quick;
+
+    # Create
+    my $obj = Object::Quick->new();
+
+    # Add a custom method
+    $obj->sub( Object::Quick::VMethod->new( sub { 'a' });
+    print $obj->sub; # prints 'a'
+
+    # and to clear
+    $obj->sub( $Object::Quick::CLEAR );
+
 =head1 EXPORTED FUNCTIONS
 
-There is only one exported function, that is the quick-convert function. It is
-only imported when requested. To import the function add the name you which it
-to use as an argument to use Object::Quick.
+The first three arguments are simply shortcuts to reduce your typing. They are
+only exported if specified, and they take whatever name you provide. All other
+arguments should be the names of class methods for which you want shortcuts.
 
-    use Object::Quick 'quick_convert_function_name';
+You can use the special arguments -obj, -class, and -all as well, see below for
+what they do.
+
+=over 4
+
+=item Argument 1 - Quick object constructor
+
+    use Object::Quick 'obj';
+    my $obj = obj( a => a );
 
 This function is a shortcut so you don't have to keep typing
 Object::Quick->new( ... ). It takes any arguments new() accepts.
 
+=item Argument 2 - Method creator
+
+    use Object::Quick 'obj', 'method';
+    my $obj = obj( a => 'a', m => method { 'method' });
+    $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
+
+This function is used to create a special subref that Object::Quick recognises
+as a method, and as such runs it with arguments instead of returning the ref.
+
+=item Argument 3 - Clearer
+
+    use Object::Quick qw/obj method clear/
+    my $obj = obj( a => 'a', m => method { 'method' });
+    $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
+
+    # Now we can also remove a method from an object
+    $obj->sub( clear );
+
+This is primarily used to remove methods from objects.
+
+=item Argument - -obj
+
+    use Object::Quick '-obj';
+
+    $obj = obj( a => method { 'a' });
+    $obj->a( clear );
+
+This imports the 3 primary functions with simple names
+
+=item Argument - -class
+
+    use Object::Quick '-class';
+
+Import all class methods in function form so you can use
+
+    method( ... );
+
+Instead of
+
+    Object::Quick->method( ... );
+
+=back
+
+=head1 OBJECT METHODS
+
+Anything that is a legal method name can be used. Can be used to get or set the
+attribute of the object. If given an Object::Quick::VMethod object then all
+future calls to that method will run the VMethod with any arguments provided.
+VMethods can be cleared by using the $Object::Quick::CLEAR variable as an
+argument to the method, that is all the clear() shortcut function does.
+
+=cut
+
 =head1 CLASS METHODS
 
-There are only 3 class methods. They can only be used as class methods. When
-used as object method they will act like any other accessor. This allows for
-objects with attributes named 'new', 'import', and 'AUTOLOAD'.
+They can only be used as class methods. When used as object method they will
+act like any other accessor. This allows for objects with attributes named
+'new', 'import', and 'AUTOLOAD', etc...
 
 =over 4
 
@@ -86,68 +165,41 @@ objects with attributes named 'new', 'import', and 'AUTOLOAD'.
 
 =item $obj = $class->new()
 
-The object constructor. Creates a new instance of an object with the provided
-hash. If no hash is provided an anonymous one will be created.
-
-=item $class->import()
-
-=item $class->import( $quick_create_name )
-
-Automatically called when you use Object::Quick. The optional argument is the
-name you want to use for the quick create method.
-
-=item AUTOLOAD()
-
-This is a special method. This is where the magic happens. Read the perldoc for
-AUTOLOAD for more details.
-
-=back
-
-=head1 OBJECT METHODS
-
-Anything that is a legal method name can be used. Can be used to get or set the
-attribute of the object.
-
 =cut
 
 #}}}
 
-our $VERSION = 0.005;
+our $VERSION = 0.006;
 our $AUTOLOAD;
+our $VMC = 'Object::Quick::VMethod';
+our $CLEAR = \'CLEAR_REF';
+our %CLASS_METHODS;
 
 # Keeping this sub in a variable so we do not have an inaccessible hash
 # element for whatever name this sub would have.
 our $PARAM = sub {
     my $self = shift;
     my $param = shift;
-    my ( $set_vm, $val ) = @_;
-    $set_vm = $set_vm
-           && $set_vm =~ m/^method$/i
-           && @_ > 1
-           && (
-                ( !defined( $val ))
-            ||
-                ( ref( $val ) && ref( $val ) eq 'CODE' )
-           );
+    my ( $value ) = @_;
+    my $clear = ref( $value ) && $value == $CLEAR;
 
-    my $current = $self->{ $param };
-    my $vmethod = ($current && eval { $current->isa( $VM_CLASS ) }) ? 1 : 0;
-
-    return $current->( $self, @_ )
-        if ( $vmethod && !$set_vm );
-
-    if ( $set_vm ) {
-        if ( defined $val ) {
-            $self->{ $param } = bless( $val, $VM_CLASS );
-            return !! $self->{ $param };
-        }
-        else {
-            delete $self->{ $param };
-            return ! exists $self->{ $param };
-        }
+    if ( $clear ) {
+        delete $self->{ $param };
+        return;
     }
 
+    my $current = $self->{ $param };
+
+    # If the param is currently a vmethod, and we are not assigning a new vsub,
+    # run the vsub, Also clear if clear is given
+    return $self->$current( @_ )
+        if ( ref($current) && eval { $current->isa( $VMC )})
+        && !eval { ref($value) && $value->isa( $VMC )};
+
+    # Assign value if there is one
     ($self->{ $param }) = @_ if @_;
+
+    # Return the value
     return $self->{ $param };
 };
 
@@ -155,25 +207,47 @@ sub import {
     my $class = shift;
     return $class->$PARAM( 'import', @_ ) if ref( $class );
 
-    my ( $name ) = @_;
-    return unless $name;
+    my %args = map { $_ => 1 } grep { m/^-/ } @_;
+
+    my @names = grep { $_ ? m/^-/ ? undef : $_ : undef } @_[0 .. 2];
+    my @default = qw/obj method clear/;
+    if ( $args{ -obj } || $args{ -all }) {
+        $names[$_] ||= $default[$_] for 0 .. 2;
+    }
+
+    my %subs;
+
+    %subs = map {
+        $_ => sub { $class->$_( @_ )}
+    } keys %CLASS_METHODS
+        if $args{ -class } || $args { -all };
+
+    $subs{ $names[0] } = sub { $class->new( @_ )}
+        if $names[0];
+
+    $subs{ $names[1] } = sub (&){ return $VMC->new( @_ )}
+        if $names[1];
+
+    $subs{ $names[2] } = sub { return $CLEAR }
+        if $names[2];
 
     my ( $caller ) = caller;
-    my $ref = $caller . '::' . $name;
+    my $ref_base = $caller . '::';
 
-    no strict 'refs';
-    return if defined( &$ref );
-    *$ref = sub { $class->new( @_ )};
+    while ( my ( $name, $sub ) = each %subs ) {
+        no strict 'refs';
+        my $ref = $ref_base . $name;
+        return if defined( &$ref );
+        *$ref = $sub;
+    }
+
+    1;
 }
 
 sub new {
     my $class = shift;
     return $class->$PARAM( 'new', @_ ) if ref( $class );
-    my ( $proto, %meta ) = @_;
-    my $methods = { map { $_ => 1 } @{ delete $meta{ methods }}
-        if $meta{ methods };
-
-    return bless( [ $proto, $methods, \%meta ], $class );
+    return bless( @_ ? @_ > 1 ? { @_ } : $_[0] : {}, $class );
 }
 
 sub AUTOLOAD {
@@ -185,7 +259,7 @@ sub AUTOLOAD {
     return $self->$PARAM( $param, @_ );
 }
 
-our %CLASS_METHODS = (
+%CLASS_METHODS = (
     clone => sub {
         my $class = shift;
         my ($one) = @_;
@@ -199,7 +273,7 @@ our %CLASS_METHODS = (
         return {
             map {
                 my $val = $one->{ $_ };
-                eval { $val->isa( $VM_CLASS )} ? ( $_ => $val ) : ()
+                eval { $val && $val->isa( $VMC )} ? ( $_ => $val ) : ()
             } keys %$one
         };
     },
@@ -213,7 +287,7 @@ our %CLASS_METHODS = (
                 warn "$m() has a value, or is already a method, not replacing.";
                 next;
             }
-            $one->$m( 'method', $s );
+            $one->$m( eval { $s->isa( $VMC )} ? $s : $VMC->new( $s ));
         }
     },
     instance => sub {
@@ -226,24 +300,58 @@ our %CLASS_METHODS = (
         my $class = shift;
         my ($one, $two) = @_;
         return unless $one and $two;
-        $methods = $class->methods( $two );
+        my $methods = $class->methods( $two );
         $class->add_methods( $one, %$methods );
     },
-    merge_methods => sub {},
-    class_methods => sub {},
-    
+    class_methods => sub {
+        my $class = shift;
+        my $one = shift;
+        return unless $one;
+        my %subs = map {
+            $_ => sub {
+                my $self = shift;
+                my $class = ref( $self );
+                $class->$_( $self, @_ );
+            }
+        } keys %CLASS_METHODS;
+        $class->add_methods( $one, %subs );
+    },
 );
 
 for my $method ( keys %CLASS_METHODS ) {
-    *$method = sub {
+    my $sub = sub {
         my $class = shift;
         return $class->$PARAM( $method, @_ ) if ref( $class );
-        return $CLASS_METHODS->{ $method }->( $class, @_ );
+        return $CLASS_METHODS{ $method }->( $class, @_ );
     };
+
+    no strict 'refs';
+    *$method = $sub;
 }
 1;
 
 __END__
+
+=back
+
+=head1 MAGIC
+
+The object constructor. Creates a new instance of an object with the provided
+hash. If no hash is provided an anonymous one will be created.
+
+=item $class->import()
+
+=item $class->import( @args )
+
+Automatically called when you use Object::Quick. The optional arguments are the
+names you want to use for the shortcut functions.
+
+=item AUTOLOAD()
+
+This is a special method. This is where the magic happens. Read the perldoc for
+AUTOLOAD for more details.
+
+=back
 
 =head1 AUTHORS
 

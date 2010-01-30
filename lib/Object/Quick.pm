@@ -23,10 +23,14 @@ methods.
 
 =head1 WHERE IS THIS USEFUL
 
-I urge strongly against using this magic in production code. This object is
-however very useful in testing code. Sometimes you just need to setup a
+This object is very useful in testing code. Sometimes you just need to setup a
 simulation of an object. Maybe you also need this simulation to have methods
-that return more objects.
+that return more objects. It was also fun to implement.
+
+The fact is that in almost every case it would be better to create a proper
+package for the class you need. Aside from some testing scenarios I cannot
+think of a real-world use for this. However you may be able to find a use for
+it.
 
 =head1 SYNOPSYS
 
@@ -35,36 +39,35 @@ will be used as names of shortcut functions.  Providing no name will not import
 any function.  First name is quick object creation, second name is the method
 maker, third name is the clear helper for clearing values.
 
-    # Import the class, bring in shortcut functions
+Import the class, bring in shortcut functions:
+
     use Object::Quick qw/obj vm clear/;
 
     my $obj = obj( a => 'a' );
     print $obj->a; #prints 'a'
 
-    $obj = obj( a => obj( a => 'a' ));
-    print $obj->a->a; #prints 'a'
+New keys can be added trivially:
 
-    # You can create objects with attributes sharing the names of class-methods
-    $obj = obj( new => 'new' );
-    print $obj->new; #prints 'new'
-
-    # New keys can be added trivially
     $obj->newkey( 'new key!' );
     print $obj->newkey; #prints 'new key!'
 
-    #You can create objets using the package as well:
-    $obj = Object::Quick->new();
+Add a method to the object:
 
-    #Add a method to the object:
     $obj->do_stuff( vm { my $self = shift; $self->ran( @_ ) });
     $obj->do_stuff( 'Blah' );
     print $obj->ran; #prints 'Blah'
 
-    #Clear a method
+Remove a method from the object:
+
     $obj->do_stuff( clear );
     ok( !$obj->do_stuff );
     $obj->do_stuff( 'Blah' );
     print $obj->do_stuff; #prints 'Blah'
+
+You can create objects with attributes sharing the names of class-methods
+
+    $obj = obj( new => 'new' );
+    print $obj->new; #prints 'new'
 
 You can accomplish the same without shortcuts, but it adds a lot of typing:
 
@@ -80,11 +83,12 @@ You can accomplish the same without shortcuts, but it adds a lot of typing:
     # and to clear
     $obj->sub( $Object::Quick::CLEAR );
 
+
 =head1 EXPORTED FUNCTIONS
 
-The first three arguments are simply shortcuts to reduce your typing. They are
-only exported if specified, and they take whatever name you provide. All other
-arguments should be the names of class methods for which you want shortcuts.
+Nothing is exported without arguments. The first three arguments are simply
+shortcuts to reduce your typing. They are only exported if specified, and they
+take whatever name you provide.
 
 You can use the special arguments -obj, -class, and -all as well, see below for
 what they do.
@@ -110,7 +114,7 @@ as a method, and as such runs it with arguments instead of returning the ref.
 
 =item Argument 3 - Clearer
 
-    use Object::Quick qw/obj method clear/
+    use Object::Quick qw/obj method clear/;
     my $obj = obj( a => 'a', m => method { 'method' });
     $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
 
@@ -122,6 +126,7 @@ This is primarily used to remove methods from objects.
 =item Argument - -obj
 
     use Object::Quick '-obj';
+    # Same as: use Object::Quick qw/obj method clear/;
 
     $obj = obj( a => method { 'a' });
     $obj->a( clear );
@@ -139,6 +144,12 @@ Import all class methods in function form so you can use
 Instead of
 
     Object::Quick->method( ... );
+
+=item Argument - -class
+
+Same as:
+
+    use Object::Quick qw/-obj -class/;
 
 =back
 
@@ -158,6 +169,23 @@ They can only be used as class methods. When used as object method they will
 act like any other accessor. This allows for objects with attributes named
 'new', 'import', and 'AUTOLOAD', etc...
 
+When -class is provided as an argument to use, class methods are imported as
+functions. Heres an example:
+
+    use Object::Quick 'obj';
+    my $obj = obj();
+    my $methods Object::Quick->methods( $obj );
+
+Can also be done like this:
+
+    use Object::Quick qw/obj -class/;
+    my $obj = obj();
+    my $methods = methods( $obj );
+
+Notes:
+
+new(), import(), and AUTOLOAD() are not imported when package is used with -class.
+
 =over 4
 
 =item $obj = $class->new( $hashref )
@@ -165,6 +193,9 @@ act like any other accessor. This allows for objects with attributes named
 =item $obj = $class->new( %hash )
 
 =item $obj = $class->new()
+
+The object constructor. Creates a new instance of an object with the provided
+hash. If no hash is provided an anonymous one will be created.
 
 =cut
 
@@ -263,6 +294,46 @@ sub AUTOLOAD {
     return $self->$PARAM( $param, @_ );
 }
 
+=item $clone = $class->clone( $obj )
+
+Clone an Object::Quick object. This is not a deep copy, a new reference is
+created and blessed, however it goes no deeper.
+
+=item $hash = $class->methods( $obj )
+
+Returns a hash with all the VMethods in the object, method names are the keys.
+
+=item $class->add_methods( $obj, name => sub { ... }, nameb => sub { ... })
+
+Add the specified methods to $obj
+
+=item my $new = $class->instance( $obj )
+
+Crate a new instance of the given object; that is create a new object with all
+the same methods, but none of the accessor values.
+
+=item $class->inherit( $one, $two )
+
+Give $one all the methods currently in $two.
+
+=item $class->class_methods( $obj )
+
+Give $obj object method forms of all the class methods except for new, import,
+and AUTOLOAD.
+
+example:
+
+    use Object::Quick 'obj';
+    my $obj = obj();
+    Object::Quick->class_methods( $obj );
+
+    my $new = $obj->clone;
+    my $methods = $obj->methods;
+    $obj->inherit( $two );
+    $new = $obj->instance;
+
+=cut
+
 %CLASS_METHODS = (
     clone => sub {
         my $class = shift;
@@ -342,8 +413,7 @@ __END__
 
 =head1 MAGIC
 
-The object constructor. Creates a new instance of an object with the provided
-hash. If no hash is provided an anonymous one will be created.
+=over 4
 
 =item $class->import()
 

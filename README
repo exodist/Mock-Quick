@@ -1,5 +1,5 @@
 NAME
-    Object-Quick - Quickly turn a hash into an object.
+    Object::Quick - Quickly turn a hash into an object.
 
 DESCRIPTION
     An object created from a hash. Every hash key can be used as a method to
@@ -7,51 +7,163 @@ DESCRIPTION
     $obj->newkey( $val ). Essentially an object oriented interface to a
     hash.
 
+    Actual methods can be added to individual objects as well. Note these
+    methods are object specific, not class specific. Adding a method to one
+    object will not add it to others. There are some class methods in the
+    works to help manage methods.
+
 WHERE IS THIS USEFUL
-    I urge strongly against using this magic in production code. This object
-    is however very useful in testing code. Sometimes you just need to setup
-    a simulation of an object. Maybe you also need this simulation to have
-    methods that return more objects.
+    This object is very useful in testing code. Sometimes you just need to
+    setup a simulation of an object. Maybe you also need this simulation to
+    have methods that return more objects. It was also fun to implement.
+
+    The fact is that in almost every case it would be better to create a
+    proper package for the class you need. Aside from some testing scenarios
+    I cannot think of a real-world use for this. However you may be able to
+    find a use for it.
 
 SYNOPSYS
-        # Use Object-Quick with a quick-create function name.
-        # Whatever name you provide will be used to create a function that converts
-        # any hash into an object. Providing no name will not import any function.
+    Use Object-Quick with a quick-create function names. Whatever names you
+    provide will be used as names of shortcut functions. Providing no name
+    will not import any function. First name is quick object creation,
+    second name is the method maker, third name is the clear helper for
+    clearing values.
 
-        use Object::Quick 'obj';
+    Import the class, bring in shortcut functions:
+
+        use Object::Quick qw/obj vm clear/;
 
         my $obj = obj( a => 'a' );
         print $obj->a; #prints 'a'
 
-        $obj = obj( a => obj( a => 'a' );
-        print $obj->a->a; #prints 'a'
+    New keys can be added trivially:
 
-        # You can create objects with attriubtes sharing the names of class-methods
-        $obj = obj( new => 'new' );
-        print $obj->new; #prints 'new'
-
-        # New keys can be added trivially
         $obj->newkey( 'new key!' );
         print $obj->newkey; #prints 'new key!'
 
-        #You can create objets using the package as well:
-        $obj = Object::Quick->new();
+    Add a method to the object:
+
+        $obj->do_stuff( vm { my $self = shift; $self->ran( @_ ) });
+        $obj->do_stuff( 'Blah' );
+        print $obj->ran; #prints 'Blah'
+
+    Remove a method from the object:
+
+        $obj->do_stuff( clear );
+        ok( !$obj->do_stuff );
+        $obj->do_stuff( 'Blah' );
+        print $obj->do_stuff; #prints 'Blah'
+
+    You can create objects with attributes sharing the names of
+    class-methods
+
+        $obj = obj( new => 'new' );
+        print $obj->new; #prints 'new'
+
+    You can accomplish the same without shortcuts, but it adds a lot of
+    typing:
+
+        use Object::Quick;
+
+        # Create
+        my $obj = Object::Quick->new();
+
+        # Add a custom method
+        $obj->sub( Object::Quick::VMethod->new( sub { 'a' });
+        print $obj->sub; # prints 'a'
+
+        # and to clear
+        $obj->sub( $Object::Quick::CLEAR );
 
 EXPORTED FUNCTIONS
-    There is only one exported function, that is the quick-convert function.
-    It is only imported when requested. To import the function add the name
-    you which it to use as an argument to use Object::Quick.
+    Nothing is exported without arguments. The first three arguments are
+    simply shortcuts to reduce your typing. They are only exported if
+    specified, and they take whatever name you provide.
 
-        use Object::Quick 'quick_convert_function_name';
+    You can use the special arguments -obj, -class, and -all as well, see
+    below for what they do.
 
-    This function is a shortcut so you don't have to keep typing
-    Object::Quick->new( ... ). It takes any arguments new() accepts.
+    Argument 1 - Quick object constructor
+            use Object::Quick 'obj';
+            my $obj = obj( a => a );
+
+        This function is a shortcut so you don't have to keep typing
+        Object::Quick->new( ... ). It takes any arguments new() accepts.
+
+    Argument 2 - Method creator
+            use Object::Quick 'obj', 'method';
+            my $obj = obj( a => 'a', m => method { 'method' });
+            $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
+
+        This function is used to create a special subref that Object::Quick
+        recognises as a method, and as such runs it with arguments instead
+        of returning the ref.
+
+    Argument 3 - Clearer
+            use Object::Quick qw/obj method clear/;
+            my $obj = obj( a => 'a', m => method { 'method' });
+            $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
+
+            # Now we can also remove a method from an object
+            $obj->sub( clear );
+
+        This is primarily used to remove methods from objects.
+
+    Argument - -obj
+            use Object::Quick '-obj';
+            # Same as: use Object::Quick qw/obj method clear/;
+
+            $obj = obj( a => method { 'a' });
+            $obj->a( clear );
+
+        This imports the 3 primary functions with simple names
+
+    Argument - -class
+            use Object::Quick '-class';
+
+        Import all class methods in function form so you can use
+
+            method( ... );
+
+        Instead of
+
+            Object::Quick->method( ... );
+
+    Argument - -class
+        Same as:
+
+            use Object::Quick qw/-obj -class/;
+
+OBJECT METHODS
+    Anything that is a legal method name can be used. Can be used to get or
+    set the attribute of the object. If given an Object::Quick::VMethod
+    object then all future calls to that method will run the VMethod with
+    any arguments provided. VMethods can be cleared by using the
+    $Object::Quick::CLEAR variable as an argument to the method, that is all
+    the clear() shortcut function does.
 
 CLASS METHODS
-    There are only 3 class methods. They can only be used as class methods.
-    When used as object method they will act like any other accessor. This
-    allows for objects with attributes named 'new', 'import', and
-    'AUTOLOAD'.
+    They can only be used as class methods. When used as object method they
+    will act like any other accessor. This allows for objects with
+    attributes named 'new', 'import', and 'AUTOLOAD', etc...
+
+    When -class is provided as an argument to use, class methods are
+    imported as functions. Heres an example:
+
+        use Object::Quick 'obj';
+        my $obj = obj();
+        my $methods Object::Quick->methods( $obj );
+
+    Can also be done like this:
+
+        use Object::Quick qw/obj -class/;
+        my $obj = obj();
+        my $methods = methods( $obj );
+
+    Notes:
+
+    new(), import(), and AUTOLOAD() are not imported when package is used
+    with -class.
 
     $obj = $class->new( $hashref )
     $obj = $class->new( %hash )
@@ -60,18 +172,48 @@ CLASS METHODS
         provided hash. If no hash is provided an anonymous one will be
         created.
 
+    $clone = $class->clone( $obj )
+        Clone an Object::Quick object. This is not a deep copy, a new
+        reference is created and blessed, however it goes no deeper.
+
+    $hash = $class->methods( $obj )
+        Returns a hash with all the VMethods in the object, method names are
+        the keys.
+
+    $class->add_methods( $obj, name => sub { ... }, nameb => sub { ... })
+        Add the specified methods to $obj
+
+    my $new = $class->instance( $obj )
+        Crate a new instance of the given object; that is create a new
+        object with all the same methods, but none of the accessor values.
+
+    $class->inherit( $one, $two )
+        Give $one all the methods currently in $two.
+
+    $class->class_methods( $obj )
+        Give $obj object method forms of all the class methods except for
+        new, import, and AUTOLOAD.
+
+        example:
+
+            use Object::Quick 'obj';
+            my $obj = obj();
+            Object::Quick->class_methods( $obj );
+
+            my $new = $obj->clone;
+            my $methods = $obj->methods;
+            $obj->inherit( $two );
+            $new = $obj->instance;
+
+MAGIC
     $class->import()
-    $class->import( $quick_create_name )
+    $class->import( @args )
         Automatically called when you use Object::Quick. The optional
-        argument is the name you want to use for the quick create method.
+        arguments are the names you want to use for the shortcut functions.
 
     AUTOLOAD()
         This is a special method. This is where the magic happens. Read the
         perldoc for AUTOLOAD for more details.
-
-OBJECT METHODS
-    Anything that is a legal method name can be used. Can be used to get or
-    set the attribute of the object.
 
 AUTHORS
     Chad Granum exodist7@gmail.com

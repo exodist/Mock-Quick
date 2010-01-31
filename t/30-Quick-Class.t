@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 
 my $CLASS;
 
@@ -70,7 +71,7 @@ is_deeply(
     "Same methods"
 );
 ok( $one->x, "original has attribute" );
-ok( !$tmp->x, "instance did not copy attributes" );
+ok( !$tmp->{x}, "instance did not copy attributes" );
 # }}}
 
 ######
@@ -84,7 +85,7 @@ is_deeply(
     "Same methods"
 );
 ok( $one->x, "original has attribute" );
-ok( !$tmp->x, "new did not copy attributes" );
+ok( !$tmp->{x}, "new did not copy attributes" );
 # }}}
 
 ######
@@ -147,7 +148,7 @@ is_deeply(
     "Same methods"
 );
 ok( $one->x, "original has attribute" );
-ok( !$tmp->x, "instance did not copy attributes" );
+ok( !$tmp->{x}, "instance did not copy attributes" );
 # }}}
 
 ######
@@ -161,7 +162,7 @@ is_deeply(
     "Same methods"
 );
 ok( $one->x, "original has attribute" );
-ok( !$tmp->x, "new did not copy attributes" );
+ok( !$tmp->{x}, "new did not copy attributes" );
 # }}}
 
 ######
@@ -215,7 +216,7 @@ is_deeply(
     "Same methods"
 );
 ok( $cmo->x, "original has attribute" );
-ok( !$tmp->x, "instance did not copy attributes" );
+ok( !$tmp->{x}, "instance did not copy attributes" );
 # }}}
 
 ######
@@ -232,9 +233,45 @@ is_deeply(
     "Same methods"
 );
 ok( $cmo->x, "original has attribute" );
-ok( !$tmp->x, "new did not copy attributes" );
+ok( !$tmp->{x}, "new did not copy attributes" );
 # }}}
 # }}}
+#}}}
+
+#{{{ Replacing
+#add_methods
+my $first = method { 'a' };
+my $second = method { 'b' };
+$one = obj( a => $first );
+is( $one->{ a }, $first, "First sub in place" );
+add_methods( $one, a => $second );
+is( $one->{ a }, $first, "a not replaced" );
+
+is( $one->{ a }, $first, "First sub in place" );
+add_methods( $one, '-replace', a => $second );
+is( $one->{ a }, $second, "a was replaced" );
+
+
+#class_methods
+$one = obj( inherit => $first );
+class_methods( $one );
+is( $one->{ inherit }, $first, "Not replaced" );
+class_methods( $one, '-replace' );
+ok( $one->{ inherit } != $first, "replaced" );
+dies_ok { class_methods( $one, 'replace' )} "Bad flag";
+like( $@, qr/invalid flag\(s\): replace/, "Bad flag" );
+
+
+#Inherit
+$one = obj( a => $first );
+$two = obj( a => $second );
+inherit( $one, $two );
+is( $one->{a}, $first, "Not replaced" );
+inherit( $one, $two, '-replace' );
+is( $one->{a}, $second, "replaced" );
+dies_ok { inherit( $one, $two, 'replace' )} "Bad flag";
+like( $@, qr/invalid flag\(s\): replace/, "Bad flag" );
+
 #}}}
 
 done_testing();

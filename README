@@ -212,19 +212,30 @@ CLASS METHODS
         Returns a hash with all the Methods in the object, method names are
         the keys.
 
-    $class->add_methods( $obj, name => sub { ... }, nameb => sub { ... })
-        Add the specified methods to $obj
+    $class->add_methods( $obj, @flags, name => sub { ... }, nameb => sub {
+    ... })
+        Add the specified methods to $obj. @flags is optional. Flags are any
+        arguments specified after $obj that start with a '-' up until the
+        first argument that does not start with a '-'.
 
-    my $new = $class->instance( $obj )
+        Possible Flags:
+
+        -replace: Replace existing methods with those being added, normally
+        existing methods will not be overriden.
+
+    my $new = $class->instance( $obj, @attributes )
         Crate a new instance of the given object; that is create a new
         object with all the same methods, but none of the accessor values.
 
-    $class->inherit( $one, $two )
-        Give $one all the methods currently in $two.
+    $class->inherit( $one, $two, @flags )
+        Give $one all the methods currently in $two. Existing methods in
+        $one will not be overriden by those in $two unless the '-replace'
+        flag is specified.
 
-    $class->class_methods( $obj )
+    $class->class_methods( $obj, @flags )
         Give $obj object method forms of all the class methods except for
-        new, import, and AUTOLOAD.
+        new, import, and AUTOLOAD. existing methods in $obj will not be
+        overriden unless the '-replace' flag is specified.
 
         example:
 

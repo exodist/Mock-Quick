@@ -240,7 +240,7 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = 0.009;
+our $VERSION = '0.010';
 our $AUTOLOAD;
 our $MC = 'Object::Quick::Method';
 our $CLEAR = \'CLEAR_REF';
@@ -390,23 +390,32 @@ created and blessed, however it goes no deeper.
 
 Returns a hash with all the Methods in the object, method names are the keys.
 
-=item $class->add_methods( $obj, name => sub { ... }, nameb => sub { ... })
+=item $class->add_methods( $obj, @flags, name => sub { ... }, nameb => sub { ... })
 
-Add the specified methods to $obj
+Add the specified methods to $obj. @flags is optional. Flags are any arguments
+specified after $obj that start with a '-' up until the first argument that
+does not start with a '-'.
 
-=item my $new = $class->instance( $obj )
+Possible Flags:
+
+-replace: Replace existing methods with those being added, normally existing
+methods will not be overriden.
+
+=item my $new = $class->instance( $obj, @attributes )
 
 Crate a new instance of the given object; that is create a new object with all
 the same methods, but none of the accessor values.
 
-=item $class->inherit( $one, $two )
+=item $class->inherit( $one, $two, @flags )
 
-Give $one all the methods currently in $two.
+Give $one all the methods currently in $two. Existing methods in $one will not
+be overriden by those in $two unless the '-replace' flag is specified.
 
-=item $class->class_methods( $obj )
+=item $class->class_methods( $obj, @flags )
 
 Give $obj object method forms of all the class methods except for new, import,
-and AUTOLOAD.
+and AUTOLOAD. existing methods in $obj will not be overriden unless the
+'-replace' flag is specified.
 
 example:
 
@@ -441,14 +450,16 @@ example:
     },
     add_methods => sub {
         my $class = shift;
-        my ($one, %methods) = @_;
+        my ($one, @params) = @_;
+        my @flags;
+        push( @flags, shift( @params )) while $params[0] =~ m/^-/;
+        my %methods = @params;
+        my $replace = grep { '-replace' } @flags;
+
         return unless $one and @_ > 2;
 
         while ( my ( $m, $s ) = each %methods ) {
-            if (defined $one->{ $m }) {
-                carp "$m() has a value, or is already a method, not replacing.";
-                next;
-            }
+            next if defined $one->{ $m } && !$replace;
             $one->$m( eval { $s->isa( $MC )} ? $s : $MC->new( $s ));
         }
     },
@@ -460,14 +471,20 @@ example:
     },
     inherit => sub {
         my $class = shift;
-        my ($one, $two) = @_;
+        my ($one, $two, @flags) = @_;
+        my @bad = grep { $_ !~ m/^-/ } @flags;
+        croak( "invalid flag(s): " . join( ' ', @bad )) if @bad;
+
         return unless $one and $two;
         my $methods = $class->methods( $two );
-        $class->add_methods( $one, %$methods );
+        $class->add_methods( $one, @flags, %$methods );
     },
     class_methods => sub {
         my $class = shift;
-        my ( $one ) = @_;
+        my ( $one, @flags ) = @_;
+        my @bad = grep { $_ !~ m/^-/ } @flags;
+        croak( "invalid flag(s): " . join( ' ', @bad )) if @bad;
+
         return unless $one;
         my %subs;
         for my $method ( keys %CLASS_METHODS ) {
@@ -478,7 +495,7 @@ example:
                 $class->$sub( $self, @_ );
             };
         }
-        $class->add_methods( $one, %subs );
+        $class->add_methods( $one, @flags, %subs );
     },
 );
 

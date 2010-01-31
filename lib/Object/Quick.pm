@@ -1,7 +1,7 @@
 package Object::Quick;
 use strict;
 use warnings;
-use Object::Quick::VMethod;
+use Object::Quick::Method;
 use Carp;
 
 #{{{ POD
@@ -77,7 +77,7 @@ You can accomplish the same without shortcuts, but it adds a lot of typing:
     my $obj = Object::Quick->new();
 
     # Add a custom method
-    $obj->sub( Object::Quick::VMethod->new( sub { 'a' });
+    $obj->sub( Object::Quick::Method->new( sub { 'a' });
     print $obj->sub; # prints 'a'
 
     # and to clear
@@ -156,10 +156,49 @@ Same as:
 =head1 OBJECT METHODS
 
 Anything that is a legal method name can be used. Can be used to get or set the
-attribute of the object. If given an Object::Quick::VMethod object then all
-future calls to that method will run the VMethod with any arguments provided.
-VMethods can be cleared by using the $Object::Quick::CLEAR variable as an
+attribute of the object. If given an Object::Quick::Method object then all
+future calls to that method will run the Method with any arguments provided.
+Methods can be cleared by using the $Object::Quick::CLEAR variable as an
 argument to the method, that is all the clear() shortcut function does.
+
+At object construction the following methods are added to your object. If you
+do not want these methods you can override them by providing your own.
+
+    use Object::Quick 'obj', 'method';
+
+    # Has methods following standard perl object conventions
+    my $obj = obj;
+
+    # Leave-out or override some standard object methods.
+    my $obj = obj( can => undef, DESTROY => method { ... }, ... );
+
+=over 4
+
+=item $obj->new( key => 'val' )
+
+This will create a new object with all the same methods as the original as well
+as any data or methods provided to new().
+
+=item $obj->can( $name )
+
+Always returns a subref, there is never a case where it will return undef on an
+object.
+
+    use Object::Quick 'obj';
+    my $obj = obj;
+
+    my $sub = $obj->can( 'stuff' );
+    $obj->$sub( 'value' );
+
+=item $obj->isa( $package )
+
+Works as expected
+
+=item $obj->DESTROY
+
+Currently does nothing except return true.
+
+=back
 
 =cut
 
@@ -201,18 +240,22 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = 0.007;
+our $VERSION = 0.008;
 our $AUTOLOAD;
-our $VMC = 'Object::Quick::VMethod';
+our $MC = 'Object::Quick::Method';
 our $CLEAR = \'CLEAR_REF';
 our %CLASS_METHODS;
+our %OBJECT_METHODS;
 
 # Keeping this sub in a variable so we do not have an inaccessible hash
 # element for whatever name this sub would have.
 our $PARAM = sub {
     my $self = shift;
     my $param = shift;
+    croak( "Accessor did not get param to access" )
+        unless $param;
     my ( $value ) = @_;
+
     my $clear = ref( $value ) && $value == $CLEAR;
 
     if ( $clear ) {
@@ -224,14 +267,19 @@ our $PARAM = sub {
 
     # If the param is currently a vmethod, and we are not assigning a new vsub,
     # run the vsub, Also clear if clear is given
+
     return $self->$current( @_ )
-        if ( ref($current) && eval { $current->isa( $VMC )})
-        && !eval { ref($value) && $value->isa( $VMC )};
+        if ( ref($current) && eval { $current->isa( $MC )})
+        && !eval { ref($value) && $value->isa( $MC )};
 
     # Assign value if there is one
+    carp( "$param takes a maximum of one argument, ignoring additional arguments." )
+        if @_ > 1;
     ($self->{ $param }) = @_ if @_;
 
     # Return the value
+    carp( "Attribute $param is uninitialized" )
+        unless exists $self->{ $param };
     return $self->{ $param };
 };
 
@@ -257,7 +305,7 @@ sub import {
     $subs{ $names[0] } = sub { $class->new( @_ )}
         if $names[0];
 
-    $subs{ $names[1] } = sub (&){ return $VMC->new( @_ )}
+    $subs{ $names[1] } = sub (&){ return $MC->new( @_ )}
         if $names[1];
 
     $subs{ $names[2] } = sub { return $CLEAR }
@@ -279,19 +327,58 @@ sub import {
     1;
 }
 
+%OBJECT_METHODS = (
+    new => $MC->new( sub {
+        my $self = shift;
+        my $class = ref( $self );
+        my $new = $class->new( @_ );
+        $class->inherit( $new, $self );
+        return $new;
+    }),
+    isa => $MC->new( sub { my $self = shift; $self->SUPER::isa( @_ )}),
+    DOES => $MC->new( sub { my $self = shift; $self->SUPER::isa( @_ )}),
+    VERSION => $MC->new( sub { my $self = shift; return ref( $self )->VERSION( @_ )}),
+    # Because of autoload magic can() should return true for everything
+    can => $MC->new( sub {
+        my $self = shift;
+        my ( $arg ) = @_;
+        return unless $arg;
+        return sub {
+            my $self = shift;
+            return $self->$PARAM( $arg, @_ );
+        };
+    }),
+    DESTROY => $MC->new( sub { 1 }),
+);
+
 sub new {
     my $class = shift;
     return $class->$PARAM( 'new', @_ ) if ref( $class );
-    return bless( @_ ? @_ > 1 ? { @_ } : $_[0] : {}, $class );
+    my $proto = @_ ? @_ > 1 ? { @_ } : $_[0] : {};
+
+    $proto = {
+        %OBJECT_METHODS,
+        %$proto,
+    };
+
+    return bless( $proto, $class );
 }
 
 sub AUTOLOAD {
     my $self = shift;
     my $param = $AUTOLOAD || 'AUTOLOAD';
     $AUTOLOAD = undef;
-
     $param =~ s/^.*:://;
-    return $self->$PARAM( $param, @_ );
+
+    # If we are setting a value make the key exist.
+    $self->{ $param } ||= undef if ( @_ );
+
+    my $method = $self->can( $param );
+
+    croak( "$param is not a valid method." )
+        unless $method;
+
+    return $self->$method( @_ );
 }
 
 =item $clone = $class->clone( $obj )
@@ -301,7 +388,7 @@ created and blessed, however it goes no deeper.
 
 =item $hash = $class->methods( $obj )
 
-Returns a hash with all the VMethods in the object, method names are the keys.
+Returns a hash with all the Methods in the object, method names are the keys.
 
 =item $class->add_methods( $obj, name => sub { ... }, nameb => sub { ... })
 
@@ -348,7 +435,7 @@ example:
         return {
             map {
                 my $val = $one->{ $_ };
-                eval { $val && $val->isa( $VMC )} ? ( $_ => $val ) : ()
+                eval { $val && $val->isa( $MC )} ? ( $_ => $val ) : ()
             } keys %$one
         };
     },
@@ -362,7 +449,7 @@ example:
                 carp "$m() has a value, or is already a method, not replacing.";
                 next;
             }
-            $one->$m( eval { $s->isa( $VMC )} ? $s : $VMC->new( $s ));
+            $one->$m( eval { $s->isa( $MC )} ? $s : $MC->new( $s ));
         }
     },
     instance => sub {
@@ -405,6 +492,23 @@ for my $method ( keys %CLASS_METHODS ) {
     no strict 'refs';
     *$method = $sub;
 }
+
+for my $method ( qw/ can isa DOES VERSION DESTROY / ) {
+    my $sub = sub {
+        my $class = shift;
+
+        # Pass it on to the object
+        return $class->$PARAM( $method, @_ )
+            if ref( $class );
+
+        #Use the UNIVERSAL implementation
+        return UNIVERSAL::can( $class, $method );
+    };
+
+    no strict 'refs';
+    *$method = $sub;
+}
+
 1;
 
 __END__

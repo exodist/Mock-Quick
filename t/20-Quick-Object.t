@@ -4,6 +4,14 @@ use warnings;
 
 use Test::More;
 
+sub capture_warn(&) {
+    my ($code) = @_;
+    my $warning;
+    local $SIG{ __WARN__ } = sub { ($warning) = @_ };
+    $code->();
+    return $warning;
+}
+
 my $CLASS = 'Object::Quick';
 
 use_ok( $CLASS );
@@ -16,12 +24,22 @@ isa_ok( $CLASS->new, $CLASS );
 
 can_ok( __PACKAGE__, 'obj' );
 my $one = obj( a => 'a' );
+ok( $one->can( 'a' ), "can 'a'");
 is( $one->a, 'a', "got a" );
-is( $one->b, undef, "no b" );
+like(
+    capture_warn { is( $one->b, undef, "no b" ) },
+    qr/Attribute b is uninitialized/,
+    "Warns of uninitialized retrieval"
+);
+
 
 $one = obj({ a => 'a' });
 is( $one->a, 'a', "got a" );
-is( $one->b, undef, "no b" );
+like(
+    capture_warn { is( $one->b, undef, "no b" ) },
+    qr/Attribute b is uninitialized/,
+    "Warns of uninitialized retrieval"
+);
 
 $one = obj( new => 'new', import => 'import', AUTOLOAD => 'autoload', PARAM => 'param' );
 is( $one->new, 'new', 'new on object returns property' );
@@ -36,10 +54,18 @@ is_deeply( $one->sub, $sub, "Simply stored a sub" );
 $one->sub( 'a' );
 is( $one->sub, "a", "Replaced" );
 
-$one->sub( $sub, 'x' );
+like(
+    capture_warn { $one->sub( $sub, 'x' ) },
+    qr/sub takes a maximum of one argument, ignoring additional arguments./,
+    "Warns of too many args"
+);
 is_deeply( $one->sub, $sub, "Simply stored a sub" );
 
-$one->sub( 'x', $sub );
+like(
+    capture_warn { $one->sub( 'x', $sub ) },
+    qr/sub takes a maximum of one argument, ignoring additional arguments./,
+    "Warns of too many args"
+);
 is_deeply( $one->sub, 'x', "Simply stored a val" );
 
 $one->x( "MeThoD" );
@@ -68,25 +94,41 @@ is( $one->x, "MeThoD", "Can store 'method'" );
     can_ok( __PACKAGE__, qw/o vm clear/ );
 
     my $vm = vm { return 'a' };
-    isa_ok( $vm, 'Object::Quick::VMethod' );
+    isa_ok( $vm, 'Object::Quick::Method' );
 
     ok( $one->$sub( @$PARAMS ), "Sub tests passed" );
 
     $one->sub( vm { $sub->(@_) });
-    is_deeply( $one->sub( @$PARAMS ), "sub_ran", "VMethod" );
+
+    isa_ok( $one->{ sub }, 'Object::Quick::Method' );
+    is( $one->sub( @$PARAMS ), "sub_ran", "Method" );
 
     $one->sub( clear );
-    is_deeply( $one->sub, undef, "VMethod cleared" );
+    like(
+        main::capture_warn { is( $one->sub, undef, "Method cleared" )},
+        qr/Attribute sub is uninitialized/,
+        "Warns of uninitialized retrieval"
+    );
 
     $SELF = \$one;
     $one = o( sub => vm { $sub->(@_) });
-    is_deeply( $one->sub( @$PARAMS ), "sub_ran", "VMethod" );
+    is_deeply( $one->sub( @$PARAMS ), "sub_ran", "Method" );
 
     $one->sub( clear );
-    is_deeply( $one->sub, undef, "VMethod cleared" );
+    like(
+        main::capture_warn { is( $one->sub, undef, "Method cleared" )},
+        qr/Attribute sub is uninitialized/,
+        "Warns of uninitialized retrieval"
+    );
 
     $one->sub( $sub );
     is_deeply( $one->sub, $sub, "Simply stored a sub" );
+
+    my $tmp;
+    $one = o( DESTROY => vm { $tmp++ });
+    ok( !$tmp, "one not destroyed" );
+    $one = undef;
+    ok( $tmp, "DESTROY was called" );
 }
 
 done_testing();

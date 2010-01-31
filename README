@@ -69,7 +69,7 @@ SYNOPSYS
         my $obj = Object::Quick->new();
 
         # Add a custom method
-        $obj->sub( Object::Quick::VMethod->new( sub { 'a' });
+        $obj->sub( Object::Quick::Method->new( sub { 'a' });
         print $obj->sub; # prints 'a'
 
         # and to clear
@@ -136,11 +136,43 @@ EXPORTED FUNCTIONS
 
 OBJECT METHODS
     Anything that is a legal method name can be used. Can be used to get or
-    set the attribute of the object. If given an Object::Quick::VMethod
-    object then all future calls to that method will run the VMethod with
-    any arguments provided. VMethods can be cleared by using the
+    set the attribute of the object. If given an Object::Quick::Method
+    object then all future calls to that method will run the Method with any
+    arguments provided. Methods can be cleared by using the
     $Object::Quick::CLEAR variable as an argument to the method, that is all
     the clear() shortcut function does.
+
+    At object construction the following methods are added to your object.
+    If you do not want these methods you can override them by providing your
+    own.
+
+        use Object::Quick 'obj', 'method';
+
+        # Has methods following standard perl object conventions
+        my $obj = obj;
+
+        # Leave-out or override some standard object methods.
+        my $obj = obj( can => undef, DESTROY => method { ... }, ... );
+
+    $obj->new( key => 'val' )
+        This will create a new object with all the same methods as the
+        original as well as any data or methods provided to new().
+
+    $obj->can( $name )
+        Always returns a subref, there is never a case where it will return
+        undef on an object.
+
+            use Object::Quick 'obj';
+            my $obj = obj;
+
+            my $sub = $obj->can( 'stuff' );
+            $obj->$sub( 'value' );
+
+    $obj->isa( $package )
+        Works as expected
+
+    $obj->DESTROY
+        Currently does nothing except return true.
 
 CLASS METHODS
     They can only be used as class methods. When used as object method they
@@ -177,7 +209,7 @@ CLASS METHODS
         reference is created and blessed, however it goes no deeper.
 
     $hash = $class->methods( $obj )
-        Returns a hash with all the VMethods in the object, method names are
+        Returns a hash with all the Methods in the object, method names are
         the keys.
 
     $class->add_methods( $obj, name => sub { ... }, nameb => sub { ... })

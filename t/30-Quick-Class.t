@@ -33,12 +33,12 @@ ok( $tmp != $one, "Not the same object" );
 #
 is_deeply(
     $CLASS->methods( $one ),
-    { a => $one->{ a }, b => $one->{ b } },
+    { %Object::Quick::OBJECT_METHODS, a => $one->{ a }, b => $one->{ b } },
     "Got methods"
 );
 is_deeply(
     $CLASS->methods( $two ),
-    { c => $two->{ c }, d => $two->{ d } },
+    { %Object::Quick::OBJECT_METHODS, c => $two->{ c }, d => $two->{ d } },
     "Got methods"
 );
 # }}}
@@ -48,8 +48,8 @@ is_deeply(
 #
 $tmp = obj;
 $CLASS->add_methods( $tmp, x => sub { 'x' }, y => method { 'y' });
-isa_ok( $tmp->{ x }, 'Object::Quick::VMethod' );
-isa_ok( $tmp->{ y }, 'Object::Quick::VMethod' );
+isa_ok( $tmp->{ x }, 'Object::Quick::Method' );
+isa_ok( $tmp->{ y }, 'Object::Quick::Method' );
 is( $tmp->x, 'x', "Correct value for x" );
 is( $tmp->y, 'y', "Correct value for y");
 # }}}
@@ -86,7 +86,7 @@ ok( !$tmp->x, "new did not copy attributes" );
 #
 my $cmo = clone( $one );
 $CLASS->class_methods( $cmo );
-isa_ok( $cmo->{ $_ }, 'Object::Quick::VMethod' ) for @METHODS;
+isa_ok( $cmo->{ $_ }, 'Object::Quick::Method' ) for @METHODS;
 
 #Individual ones are tested in the 'Imported' section.
 
@@ -110,12 +110,12 @@ ok( $tmp != $one, "Not the same object" );
 #
 is_deeply(
     methods( $one ),
-    { a => $one->{ a }, b => $one->{ b } },
+    { %Object::Quick::OBJECT_METHODS, a => $one->{ a }, b => $one->{ b } },
     "Got methods"
 );
 is_deeply(
     methods( $two ),
-    { c => $two->{ c }, d => $two->{ d } },
+    { %Object::Quick::OBJECT_METHODS, c => $two->{ c }, d => $two->{ d } },
     "Got methods"
 );
 # }}}
@@ -125,8 +125,8 @@ is_deeply(
 #
 $tmp = obj;
 add_methods( $tmp, x => sub { 'x' }, y => method { 'y' });
-isa_ok( $tmp->{ x }, 'Object::Quick::VMethod' );
-isa_ok( $tmp->{ y }, 'Object::Quick::VMethod' );
+isa_ok( $tmp->{ x }, 'Object::Quick::Method' );
+isa_ok( $tmp->{ y }, 'Object::Quick::Method' );
 is( $tmp->x, 'x', "Correct value for x" );
 is( $tmp->y, 'y', "Correct value for y");
 # }}}
@@ -163,7 +163,7 @@ ok( !$tmp->x, "new did not copy attributes" );
 #
 $cmo = clone( $one );
 class_methods( $cmo );
-isa_ok( $cmo->{ $_ }, 'Object::Quick::VMethod' ) for @METHODS;
+isa_ok( $cmo->{ $_ }, 'Object::Quick::Method' ) for @METHODS;
 
 ######
 # {{{ clone()
@@ -178,7 +178,11 @@ ok( $tmp != $cmo, "Not the same object" );
 #
 is_deeply(
     $cmo->methods,
-    { map { $_ => $cmo->{ $_ } || 'NOT REAL' } qw/a b clone methods add_methods instance inherit class_methods/ },
+    {
+        map { $_ => $cmo->{ $_ } || 'NOT REAL' } qw/ a b clone methods
+            add_methods instance inherit class_methods DESTROY isa can new
+            VERSION DOES/
+    },
     "Got methods"
 );
 # }}}
@@ -189,8 +193,8 @@ is_deeply(
 $tmp = obj;
 class_methods( $tmp );
 $tmp->add_methods( x => sub { 'x' }, y => method { 'y' });
-isa_ok( $tmp->{ x }, 'Object::Quick::VMethod' );
-isa_ok( $tmp->{ y }, 'Object::Quick::VMethod' );
+isa_ok( $tmp->{ x }, 'Object::Quick::Method' );
+isa_ok( $tmp->{ y }, 'Object::Quick::Method' );
 is( $tmp->x, 'x', "Correct value for x" );
 is( $tmp->y, 'y', "Correct value for y");
 # }}}

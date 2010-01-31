@@ -5,7 +5,7 @@ use warnings;
 use Test::More;
 use Test::Exception;
 
-my $CLASS = 'Object::Quick::VMethod';
+my $CLASS = 'Object::Quick::Method';
 
 use_ok( $CLASS );
 

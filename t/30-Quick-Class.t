@@ -16,6 +16,12 @@ my @METHODS = qw/ clone methods add_methods instance inherit class_methods /;
 can_ok( $CLASS, @METHODS );
 can_ok( __PACKAGE__, @METHODS );
 
+ok( $CLASS->isa( $CLASS ), "isa" );
+ok( $CLASS->isa( 'UNIVERSAL' ), "isa" );
+ok( !$CLASS->isa( 'Borg_Cube' ), "not isa" );
+ok( $CLASS->can( 'new' ), "Class can new()" );
+ok( !$CLASS->can( 'Borg_Cube' ), "Class can't Borg_Cube()" );
+
 #{{{ CLASS->method
 my $one = obj( a => method { 'a' }, b => method { 'b' }, x => 'x' );
 my $two = obj( c => method { 'c' }, d => method { 'd' }, y => 'y' );

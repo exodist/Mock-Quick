@@ -240,7 +240,7 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = 0.008;
+our $VERSION = 0.009;
 our $AUTOLOAD;
 our $MC = 'Object::Quick::Method';
 our $CLEAR = \'CLEAR_REF';
@@ -502,7 +502,8 @@ for my $method ( qw/ can isa DOES VERSION DESTROY / ) {
             if ref( $class );
 
         #Use the UNIVERSAL implementation
-        return UNIVERSAL::can( $class, $method );
+        my @params = @_;
+        return eval "UNIVERSAL::$method( \$class, \@params )";
     };
 
     no strict 'refs';

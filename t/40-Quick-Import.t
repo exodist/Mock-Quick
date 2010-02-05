@@ -121,7 +121,7 @@ ok( main::K->can( 'c' ), "Imported 'c'" );
     is_deeply( \@warnings, [], "No warnings" );
 
     lives_ok { Object::Quick->import( 'obj' ) } "Double import";
-    like( @warnings[0], qr/Not overriding function: Test::Twice::obj/, "Not overriden" );
+    like( $warnings[0], qr/Not overriding function: Test::Twice::obj/, "Not overriden" );
 }
 
 done_testing();

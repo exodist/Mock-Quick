@@ -23,4 +23,7 @@ dies_ok { $one->b } "Cannot use uninitialized method";
 lives_ok { $one->b( 'b' ) } "Initialize method";
 lives_ok { $one->b } "works now";
 
+ok( ! $one->can(), "No args" );
+ok( ! Object::Quick::Strict->can( 'xxx' ), "Not a ref" );
+
 done_testing();

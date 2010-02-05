@@ -3,6 +3,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 
 my $CLASS = 'Object::Quick';
 use_ok( $CLASS );
@@ -104,5 +105,23 @@ ok( main::K->can( 'o' ), "Imported 'o'" );
 ok( main::K->can( 'm' ), "Imported 'm'" );
 ok( main::K->can( 'c' ), "Imported 'c'" );
 #}}}
+
+{
+    package Test::Twice;
+    use Object::Quick;
+    use Test::More;
+    use Test::Exception;
+
+    my @warnings;
+
+    $SIG{ __WARN__ } = sub { push @warnings => @_ };
+
+    Object::Quick->import( 'obj' );
+
+    is_deeply( \@warnings, [], "No warnings" );
+
+    lives_ok { Object::Quick->import( 'obj' ) } "Double import";
+    like( @warnings[0], qr/Not overriding function: Test::Twice::obj/, "Not overriden" );
+}
 
 done_testing();

@@ -287,12 +287,13 @@ sub import {
     my $class = shift;
     return $class->$PARAM( 'import', @_ ) if ref( $class );
 
-    my %args = map { $_ => 1 } grep { $_ && m/^-/ } @_;
+    my %args = map { $_ => 1 } grep { m/^-/ } @_;
 
     my @names = grep { $_ ? m/^-/ ? undef : $_ : undef } @_[0 .. 2];
-    my @default = qw/obj method clear/;
     if ( $args{ -obj } || $args{ -all }) {
-        $names[$_] ||= $default[$_] for 0 .. 2;
+        $names[0] ||= 'obj';
+        $names[1] ||= 'method';
+        $names[2] ||= 'clear';
     }
 
     my %subs;

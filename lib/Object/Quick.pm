@@ -240,7 +240,7 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = '0.010';
+our $VERSION = '0.011';
 our $AUTOLOAD;
 our $MC = 'Object::Quick::Method';
 our $CLEAR = \'CLEAR_REF';
@@ -511,7 +511,7 @@ for my $method ( keys %CLASS_METHODS ) {
     *$method = $sub;
 }
 
-for my $method ( qw/ can isa DOES VERSION DESTROY / ) {
+for my $method ( qw/ can isa DOES VERSION / ) {
     my $sub = sub {
         my $class = shift;
 
@@ -521,11 +521,34 @@ for my $method ( qw/ can isa DOES VERSION DESTROY / ) {
 
         #Use the UNIVERSAL implementation
         my @params = @_;
-        return eval "UNIVERSAL::$method( \$class, \@params )";
+        my $umethod = "UNIVERSAL::$method";
+        return $class->$umethod(@params)
     };
 
     no strict 'refs';
     *$method = $sub;
+}
+
+sub DESTROY {
+    my $class = shift;
+
+    # XXX Since destroy is called in the event of a die, we need to make sure
+    # we preserve $@, but Object-Quick also has to use eval for some of its
+    # logic. In this case we localize $@. If we have $@ and another death
+    # occurs within Object-Quick we will throw them both - This should probably
+    # be sanity checked.
+
+    my $olderror = $@;
+    local $@ = undef;
+
+    # Pass it on to the object
+    if ( ref( $class )) {
+        my $out = eval { $class->$PARAM( 'DESTROY', @_ ) };
+        die( $@, $olderror ? "\n$olderror" : () ) if( $@ );
+        return $out;
+    }
+
+    return 1;
 }
 
 1;

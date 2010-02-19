@@ -2,12 +2,6 @@
 use strict;
 use warnings;
 
-# XXX Since destroy is called in the event of a die, we need to make sure
-# we preserve $@, but Object-Quick also has to use eval for some of its
-# logic. In this case we localize $@. If we have $@ and another death
-# occurs within Object-Quick we will throw them both - This should probably
-# be sanity checked.
-
 use Test::More;
 use Test::Exception;
 use Object::Quick qw/o/;

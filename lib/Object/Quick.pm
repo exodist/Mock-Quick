@@ -3,6 +3,7 @@ use strict;
 use warnings;
 use Object::Quick::Method;
 use Carp;
+use Scalar::Util 'blessed';
 
 #{{{ POD
 
@@ -240,7 +241,7 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = '0.011';
+our $VERSION = '0.012';
 our $AUTOLOAD;
 our $MC = 'Object::Quick::Method';
 our $CLEAR = \'CLEAR_REF';
@@ -269,8 +270,8 @@ our $PARAM = sub {
     # run the vsub, Also clear if clear is given
 
     return $self->$current( @_ )
-        if ( ref($current) && eval { $current->isa( $MC )})
-        && !eval { ref($value) && $value->isa( $MC )};
+        if ( blessed($current) && $current->isa( $MC ))
+        && !( blessed($value) && $value->isa( $MC ));
 
     # Assign value if there is one
     carp( "$param takes a maximum of one argument, ignoring additional arguments." )
@@ -445,7 +446,7 @@ example:
         return {
             map {
                 my $val = $one->{ $_ };
-                eval { $val && $val->isa( $MC )} ? ( $_ => $val ) : ()
+                ($val && blessed($val) && $val->isa( $MC )) ? ( $_ => $val ) : ()
             } keys %$one
         };
     },
@@ -461,7 +462,7 @@ example:
 
         while ( my ( $m, $s ) = each %methods ) {
             next if defined $one->{ $m } && !$replace;
-            $one->$m( eval { $s->isa( $MC )} ? $s : $MC->new( $s ));
+            $one->$m(( blessed($s) && $s->isa( $MC )) ? $s : $MC->new( $s ));
         }
     },
     instance => sub {
@@ -532,21 +533,9 @@ for my $method ( qw/ can isa DOES VERSION / ) {
 sub DESTROY {
     my $class = shift;
 
-    # XXX Since destroy is called in the event of a die, we need to make sure
-    # we preserve $@, but Object-Quick also has to use eval for some of its
-    # logic. In this case we localize $@. If we have $@ and another death
-    # occurs within Object-Quick we will throw them both - This should probably
-    # be sanity checked.
-
-    my $olderror = $@;
-    local $@ = undef;
-
     # Pass it on to the object
-    if ( ref( $class )) {
-        my $out = eval { $class->$PARAM( 'DESTROY', @_ ) };
-        die( $@, $olderror ? "\n$olderror" : () ) if( $@ );
-        return $out;
-    }
+    return $class->$PARAM( 'DESTROY', @_ )
+        if ref( $class );
 
     return 1;
 }

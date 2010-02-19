@@ -4,7 +4,7 @@ use warnings;
 
 use Test::More;
 use Test::Exception;
-use Object::Quick qw/o/;
+use Object::Quick qw/o method/;
 
 {
     package Exception::Fail;
@@ -41,5 +41,12 @@ dies_ok {
 dies_ok {
     $one = Exception::Fail->new( o() )->init
 } "init is called in chain - object-quick";
+
+# From HDP
+throws_ok { my $o = o(); die "foo" } qr/foo/, "Die after construction";
+
+throws_ok { my $o = o( DESTROY => method { die "bar" } ); die "foo" }
+    qr/foo at.+\(in cleanup\).+bar at/s,
+    "Die with custom destroy that dies";
 
 done_testing();

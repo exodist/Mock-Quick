@@ -241,7 +241,7 @@ hash. If no hash is provided an anonymous one will be created.
 
 #}}}
 
-our $VERSION = '0.012';
+our $VERSION = '0.013';
 our $AUTOLOAD;
 our $MC = 'Object::Quick::Method';
 our $CLEAR = \'CLEAR_REF';
@@ -535,7 +535,7 @@ sub DESTROY {
 
     # Pass it on to the object
     return $class->$PARAM( 'DESTROY', @_ )
-        if ref( $class );
+        if blessed($class);
 
     return 1;
 }

@@ -368,16 +368,19 @@ sub new {
 
 sub AUTOLOAD {
     my $self = shift;
+
     my $param = $AUTOLOAD || 'AUTOLOAD';
     $AUTOLOAD = undef;
     $param =~ s/^.*:://;
 
-    # If we are setting a value make the key exist.
-    $self->{ $param } ||= undef if ( @_ );
+    my $method;
+    if ( blessed( $self )) {
+        # If we are setting a value make the key exist.
+        $self->{ $param } ||= undef if ( @_ );
+        $method = $self->can( $param );
+    }
 
-    my $method = $self->can( $param );
-
-    croak( "$param is not a valid method." )
+    croak( "$param is not a valid method" )
         unless $method;
 
     return $self->$method( @_ );

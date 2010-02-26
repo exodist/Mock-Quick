@@ -34,10 +34,27 @@ Constructor, takes a coderef as the only argument.
 
 sub new {
     my $class = shift;
-    my ( $sub ) = @_;
-    die( "$class Constructor takes a code reference." )
-        unless ref( $sub ) eq 'CODE';
-    return bless( $sub, $class );
+    my ( $proto ) = @_;
+
+    my $type = ref $proto;
+
+    die( "$class Constructor takes a code reference, an array where the first element is a coderef, or a hashref where code => coderef" )
+        unless $type eq 'CODE'
+           || ($type eq 'ARRAY' && ref($proto->[0]) eq 'CODE')
+           || ($type eq 'HASH' && ref($proto->{ code }) eq 'CODE');
+
+    return bless( $proto, $class );
+}
+
+sub run {
+    my $self = shift;
+    my $type = ref $self;
+    my $sub = $type eq 'CODE' ? $self
+            : $type eq 'ARRAY' ? $self->[0]
+            : $self->{ code };
+
+    my $realself = shift;
+    return $realself->$sub( @_ );
 }
 
 1;

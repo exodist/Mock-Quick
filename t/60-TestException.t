@@ -32,14 +32,12 @@ use Object::Quick qw/o method/;
     }
 }
 
-my $one;
-
 dies_ok {
-    $one = Exception::Fail->new_with_init( o() )
+    my $one = Exception::Fail->new_with_init( o() )
 } "new_with_init - object-quick";
 
 dies_ok {
-    $one = Exception::Fail->new( o() )->init
+    my $one = Exception::Fail->new( o() )->init
 } "init is called in chain - object-quick";
 
 # From HDP

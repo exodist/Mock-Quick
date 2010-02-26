@@ -67,7 +67,13 @@ TODO: {
     isa_ok( $one->$_, 'Object::Quick::Method' ) for qw/a b c d/;
 
     $one = obj();
-    lives_and { $CLASS->base( $one, 'Base::OQTest::SubClass', 'a' .. 'c' )} "CLASS->base";
+    lives_and { $CLASS->base( $one, 'Base::OQTest::SubClass', 'a', 'b' )} "CLASS->base";
+    isa_ok( $one->$_, 'Object::Quick::Method' ) for qw/a b/;
+    is( $one->a, 'a', "inherited method" );
+    isa_ok( $one, 'Base::OQTest::SubClass', 'Base::OQTest' );
+
+    $one = obj();
+    lives_and { $CLASS->base( $one, 'Base::OQTest::SubClass' )} "CLASS->base";
     isa_ok( $one->$_, 'Object::Quick::Method' ) for qw/a b c/;
     is( $one->a, 'a', "inherited method" );
     isa_ok( $one, 'Base::OQTest::SubClass', 'Base::OQTest' );

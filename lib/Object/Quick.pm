@@ -260,7 +260,13 @@ our $PARAM = sub {
     my $clear = ref( $value ) && $value == $CLEAR;
 
     if ( $clear ) {
-        delete $self->{ $param };
+        my $old = delete $self->{ $param };
+        return unless blessed( $old );
+        return unless $old->isa( $MC );
+        return if $old->isa( 'CODE' );
+        my $onclear = $old->isa( 'ARRAY' ) ? $old->[3] : $old->{ on_clear };
+        return unless $onclear;
+        $self->$onclear;
         return;
     }
 
@@ -269,7 +275,7 @@ our $PARAM = sub {
     # If the param is currently a vmethod, and we are not assigning a new vsub,
     # run the vsub, Also clear if clear is given
 
-    return $self->$current( @_ )
+    return $current->run( $self, @_ )
         if ( blessed($current) && $current->isa( $MC ))
         && !( blessed($value) && $value->isa( $MC ));
 
@@ -337,7 +343,21 @@ sub import {
         $class->inherit( $new, $self );
         return $new;
     }),
-    isa => $MC->new( sub { my $self = shift; $self->SUPER::isa( @_ )}),
+    isa => $MC->new({
+        bases => [],
+        code => sub {
+            my $self = shift;
+            return 1 if $self->SUPER::isa( @_ );
+            for my $class ( @{ $self->{ isa }->{ bases }}) {
+                return 1 if $class->isa( @_ );
+            }
+            return;
+        },
+        on_clear => sub {
+            carp "Clearing or redefining the isa() method with base classes defined."
+                if @{ $self->{ isa }->{ bases }};
+        }
+    }),
     DOES => $MC->new( sub { my $self = shift; $self->SUPER::isa( @_ )}),
     VERSION => $MC->new( sub { my $self = shift; return ref( $self )->VERSION( @_ )}),
     # Because of autoload magic can() should return true for everything
@@ -364,6 +384,14 @@ sub new {
     };
 
     return bless( $proto, $class );
+}
+
+sub new_with_base {
+    my $class = shift;
+    my $proto = pop;
+    my @bases = @_;
+    my $self = $class->new( $proto );
+    $class->base( $_ ) for @bases;
 }
 
 sub AUTOLOAD {
@@ -501,6 +529,45 @@ example:
             };
         }
         $class->add_methods( $one, @flags, %subs );
+    },
+    _pull_flags => sub {
+        # Get the flags from an array, remove them from the passed in arrayref
+        # and return them as a list.
+    },
+    _inherit_subs => sub {
+        # given a class name and optional list of sub names, return specified
+        # subs from class, or all subs from class.
+        # name => code
+    },
+    inherit => sub {
+        my $class = shift;
+        my $one = shift( @_ ) if blessed($_[0]) and $_[0]->isa( $class );
+        my ( $from, @list ) = @_;
+
+        # Pull flags from @inherit
+        my @flags = $class->_pull_flags( \@list );
+
+        my %subs = $class->_inherit_subs( $from, @list );
+        # Take subs from _inherit_subs and turn them into regular methods
+
+        # If $one put methods in it (flags)
+            # If given list of methods only import those
+
+        # return the methods
+    },
+    base => sub {
+        # Inherit plus adding an item to self->{ isa }->{ list }
+        my $class = shift;
+        my $one = shift( @_ ) if blessed($_[0]) and $_[0]->isa( $class );
+        my ( $base, @inherit ) = @_;
+        $class->_add_base( $one, $base ) if $one;
+
+        # Pull flags from @inherit
+        my @flags = $class->_pull_flags( \@inherit );
+
+        my %subs = $class->_inherit_subs( $base, @inherit );
+        # Turn them into special methods that make it known they are inherited from a base
+        # Add the methods
     },
 );
 

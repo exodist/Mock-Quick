@@ -14,7 +14,7 @@ my $build = Module::Build->new(
     },
     build_requires => {
         'Test::Simple' => 0.88,
-        'Test::Exception' => 0,
+        'Test::Exception' => 0.29,
     },
 );
 

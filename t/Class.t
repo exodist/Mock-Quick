@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Test::More;
-use Fennec::Lite;
+use Fennec::Lite random => 0;
 use Mock::Quick::Method;
 
 our $CLASS;

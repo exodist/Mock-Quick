@@ -4,7 +4,7 @@ use warnings;
 
 use base 'Exporter';
 use Scalar::Util qw/blessed/;
-use Object::Quick::Method;
+use Mock::Quick::Method;
 use Carp qw/croak/;
 
 our $CLEAR = 'clear';

@@ -43,12 +43,6 @@ sub call {
     return $self->{$name} = shift(@_)
         if blessed( $_[0] ) && blessed( $_[0] )->isa( 'Mock::Quick::Method' );
 
-    my $super = super( $self, $name );
-    if ( $super ) {
-        unshift @_ => $self;
-        goto &$super;
-    }
-
     param( $self, $name, @_ );
 }
 
@@ -113,3 +107,23 @@ sub purge_util {
 }
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mock::Quick::Util - Uitls for L<Mock::Quick>.
+
+=head1 AUTHORS
+
+Chad Granum L<exodist7@gmail.com>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2011 Chad Granum
+
+Mock-Quick is free software; Standard perl licence.
+
+Mock-Quick is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the license for more details.

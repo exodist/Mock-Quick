@@ -53,6 +53,18 @@ sub configure {
         no strict 'refs';
         push @{"$package\::ISA"} => @$value;
     }
+    elsif ( $param eq '-attributes' ) {
+        $value = [ $value ] unless ref $value eq 'ARRAY';
+        for my $attr ( @$value ) {
+            inject( $package, $attr, sub {
+                my $self = shift;
+                croak "$attr() called on '$self' instead of an instance"
+                    unless blessed( $self );
+                ( $self->{$attr} ) = @_ if @_;
+                return $self->{$attr};
+            });
+        }
+    }
     elsif ( $param eq '-with_new' ) {
         inject( $package, 'new', sub {
             my $class = shift;
@@ -106,6 +118,7 @@ sub clear {
     my $self = shift;
     my ( $name ) = @_;
     my $package = $self->package;
+    no strict 'refs';
     my $ref = \%{"$package\::"};
     delete $ref->{ $name };
 }
@@ -119,7 +132,7 @@ sub undefine {
     undef( *{"$package\::"} );
 }
 
-sub destroy {
+sub DESTROY {
     my $self = shift;
     return unless $self->{'-takeover'};
     for my $sub ( keys %{$self} ) {
@@ -131,3 +144,78 @@ sub destroy {
 purge_util();
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mock::Quick::Class - Class mocking for Mock::Quick
+
+=head1 DESCRIPTION
+
+Provides class mocking for L<Mock::Quick>
+
+=head1 SYNOPSIS
+
+=head2 MOCKING CLASSES
+
+    use Mock::Quick::Class;
+
+    my $control = Mock::Quick::Class->new(
+        # Insert a generic new() method (blessed hash)
+        -with_new => 1,
+
+        # Inheritance
+        -subclass => 'Some::Class',
+        # Can also do
+        -subclass => [ 'Class::A', 'Class::B' ],
+
+        # generic get/set attribute methods.
+        -attributes => [ qw/a b c d/ ],
+
+        # Method that simply returns a value.
+        simple => 'value',
+
+        # Custom method.
+        method => sub { ... },
+    );
+
+    my $obj = $control->package->new;
+
+    # Override a method
+    $control->override( foo => sub { ... });
+
+    # Restore it to the original
+    $control->restore( 'foo' );
+
+    # Remove the anonymous namespace we created.
+    $control->undefine();
+
+=head2 TAKING OVER EXISTING CLASSES
+
+    use Mock::Quick::Class;
+
+    my $control = Mock::Quick::Class->takeover( 'Some::Package' );
+
+    # Override a method
+    $control->override( foo => sub { ... });
+
+    # Restore it to the original
+    $control->restore( 'foo' );
+
+    # Destroy the control object and completely restore the original class Some::Package.
+    $control = undef;
+
+=head1 AUTHORS
+
+Chad Granum L<exodist7@gmail.com>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2011 Chad Granum
+
+Mock-Quick is free software; Standard perl licence.
+
+Mock-Quick is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the license for more details.

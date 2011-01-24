@@ -9,8 +9,9 @@ my $build = Module::Build->new(
     dist_author => 'Chad Granum <exodist7@gmail.com>',
     create_readme => 1,
     requires => {
-        'Carp'         => 0,
-        'Scalar::Util' => 0,
+        'Carp'              => 0,
+        'Scalar::Util'      => 0,
+        'Exporter::Declare' => '0.103',
     },
     build_requires => {
         'Test::Simple'    => 0.88,

@@ -58,3 +58,53 @@ obj_meth DESTROY => sub {
 purge_util();
 
 1;
+
+__END__
+
+=head1 NAME
+
+Mock::Quick::Object - Object mocking for Mock::Quick
+
+=head1 DESCRIPTION
+
+Provides object mocking. See L<Mock::Quick> for a better interface.
+
+=head1 SYNOPSIS
+
+    use Mock::Quick::Object;
+    use Mock::Quick::Method;
+
+    my $obj = Mock::Quick::Object->new(
+        foo => 'bar',            # define attribute
+        do_it => qmeth { ... },  # define method
+        ...
+    );
+
+    is( $obj->foo, 'bar' );
+    $obj->foo( 'baz' );
+    is( $obj->foo, 'baz' );
+
+    $obj->do_it();
+
+    # define the new attribute automatically
+    $obj->bar( 'xxx' );
+
+    # define a new method on the fly
+    $obj->baz( Mock::Quick::Method->new( sub { ... });
+
+    # remove an attribute or method
+    $obj->baz( \$Mock::Quick::Util::CLEAR );
+
+=head1 AUTHORS
+
+Chad Granum L<exodist7@gmail.com>
+
+=head1 COPYRIGHT
+
+Copyright (C) 2011 Chad Granum
+
+Mock-Quick is free software; Standard perl licence.
+
+Mock-Quick is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the license for more details.

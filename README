@@ -1,272 +1,142 @@
 NAME
-    Object::Quick - Quickly turn a hash into an object.
+    Mock::Quick - Quickly mock objects and classes, even temporarily replace
+    them, side-effect free.
 
 DESCRIPTION
-    An object created from a hash. Every hash key can be used as a method to
-    get/set the hash element. Creation of a new key is as simple as
-    $obj->newkey( $val ). Essentially an object oriented interface to a
-    hash.
+    Mock-Quick is here to solve the current problems with Mocking libraries.
 
-    Actual methods can be added to individual objects as well. Note these
-    methods are object specific, not class specific. Adding a method to one
-    object will not add it to others. There are some class methods in the
-    works to help manage methods.
+    There are a couple Mocking libraries available on CPAN. The primary
+    problems with these libraries include verbose syntax, and most
+    importantly side-effects. Some Mocking libraries expect you to mock a
+    specific class, and will unload it then redefine it. This is
+    particularily a problem if you only want to override a class on a
+    lexical level.
 
-WHERE IS THIS USEFUL
-    This object is very useful in testing code. Sometimes you just need to
-    setup a simulation of an object. Maybe you also need this simulation to
-    have methods that return more objects. It was also fun to implement.
+    Mock-Object provides a declarative mocking interface that results in a
+    very concise, but clear syntax. There are seperate facilities for
+    mocking object instances, and classes. You can quickly create an
+    instance of an object with custom attributes and methods. You can also
+    quickly create an anonymous class, optionally inhereting from another,
+    with whatever methods you desire.
 
-    The fact is that in almost every case it would be better to create a
-    proper package for the class you need. Aside from some testing scenarios
-    I cannot think of a real-world use for this. However you may be able to
-    find a use for it.
+    Mock-Object also provides a tool that provides an OO interface to
+    overriding methods in existing classes. This tool also allows for the
+    restoration of the original class methods. Best of all this is a
+    localized tool, when your control object falls out of scope the original
+    class is restored.
 
-SYNOPSYS
-    Use Object-Quick with a quick-create function names. Whatever names you
-    provide will be used as names of shortcut functions. Providing no name
-    will not import any function. First name is quick object creation,
-    second name is the method maker, third name is the clear helper for
-    clearing values.
+SYNOPSIS
+  MOCKING OBJECTS
+        use Mock::Quick;
 
-    Import the class, bring in shortcut functions:
+        my $obj = obj(
+            foo => 'bar',            # define attribute
+            do_it => qmeth { ... },  # define method
+            ...
+        );
 
-        use Object::Quick qw/obj vm clear/;
+        is( $obj->foo, 'bar' );
+        $obj->foo( 'baz' );
+        is( $obj->foo, 'baz' );
 
-        my $obj = obj( a => 'a' );
-        print $obj->a; #prints 'a'
+        $obj->do_it();
 
-    New keys can be added trivially:
+        # define the new attribute automatically
+        $obj->bar( 'xxx' );
 
-        $obj->newkey( 'new key!' );
-        print $obj->newkey; #prints 'new key!'
+        # define a new method on the fly
+        $obj->baz( qmeth { ... });
 
-    Add a method to the object:
+        # remove an attribute or method
+        $obj->baz( qclear() );
 
-        $obj->do_stuff( vm { my $self = shift; $self->ran( @_ ) });
-        $obj->do_stuff( 'Blah' );
-        print $obj->ran; #prints 'Blah'
+  MOCKING CLASSES
+        use Mock::Quick;
 
-    Remove a method from the object:
+        my $control = qclass(
+            # Insert a generic new() method (blessed hash)
+            -with_new => 1,
 
-        $obj->do_stuff( clear );
-        ok( !$obj->do_stuff );
-        $obj->do_stuff( 'Blah' );
-        print $obj->do_stuff; #prints 'Blah'
+            # Inheritance
+            -subclass => 'Some::Class',
+            # Can also do
+            -subclass => [ 'Class::A', 'Class::B' ],
 
-    You can create objects with attributes sharing the names of
-    class-methods
+            # generic get/set attribute methods.
+            -attributes => [ qw/a b c d/ ],
 
-        $obj = obj( new => 'new' );
-        print $obj->new; #prints 'new'
+            # Method that simply returns a value.
+            simple => 'value',
 
-    You can accomplish the same without shortcuts, but it adds a lot of
-    typing:
+            # Custom method.
+            method => sub { ... },
+        );
 
-        use Object::Quick;
+        my $obj = $control->packahe->new;
 
-        # Create
-        my $obj = Object::Quick->new();
+        # Override a method
+        $control->override( foo => sub { ... });
 
-        # Add a custom method
-        $obj->sub( Object::Quick::Method->new( sub { 'a' });
-        print $obj->sub; # prints 'a'
+        # Restore it to the original
+        $control->restore( 'foo' );
 
-        # and to clear
-        $obj->sub( $Object::Quick::CLEAR );
+        # Remove the anonymous namespace we created.
+        $control->undefine();
 
-EXPORTED FUNCTIONS
-    Nothing is exported without arguments. The first three arguments are
-    simply shortcuts to reduce your typing. They are only exported if
-    specified, and they take whatever name you provide.
+  TAKING OVER EXISTING CLASSES
+        use Mock::Quick;
 
-    You can use the special arguments -obj, -class, and -all as well, see
-    below for what they do.
+        my $control = qtakeover( 'Some::Package' );
 
-    Argument 1 - Quick object constructor
-            use Object::Quick 'obj';
-            my $obj = obj( a => a );
+        # Override a method
+        $control->override( foo => sub { ... });
 
-        This function is a shortcut so you don't have to keep typing
-        Object::Quick->new( ... ). It takes any arguments new() accepts.
+        # Restore it to the original
+        $control->restore( 'foo' );
 
-    Argument 2 - Method creator
-            use Object::Quick 'obj', 'method';
-            my $obj = obj( a => 'a', m => method { 'method' });
-            $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
+        # Destroy the control object and completely restore the original class Some::Package.
+        $control = undef;
 
-        This function is used to create a special subref that Object::Quick
-        recognises as a method, and as such runs it with arguments instead
-        of returning the ref.
+EXPORTS
+    Mock-Quick uses Exporter::Declare. This allows for exports to be
+    prefixed or renamed. See "RENAMING IMPORTED ITEMS" in Exporter::Declare
+    for more information.
 
-    Argument 3 - Clearer
-            use Object::Quick qw/obj method clear/;
-            my $obj = obj( a => 'a', m => method { 'method' });
-            $obj->sub( method { my $self = shift; my @args = @_; return 'stuff' });
+    $obj = qobj( attribute => value, ... )
+        Create an object. Every possible attribute works fine as a get/set
+        accessor. You can define other methods using qmeth {...} and
+        assigning that to an attribute. You can clear a method using
+        qclear() as an argument.
 
-            # Now we can also remove a method from an object
-            $obj->sub( clear );
+        See Mock::Quick::Object for more.
 
-        This is primarily used to remove methods from objects.
+    $control = qclass( -config => ..., name => $value || sub { ... }, ... )
+        Define an anonymous package with the desired methods and
+        specifications.
 
-    Argument - -obj
-            use Object::Quick '-obj';
-            # Same as: use Object::Quick qw/obj method clear/;
+        See Mock::Quick::Class for more.
 
-            $obj = obj( a => method { 'a' });
-            $obj->a( clear );
+    $control = qtakeover( $package )
+        Take control over an existing class.
 
-        This imports the 3 primary functions with simple names
+        See Mock::Quick::Class for more.
 
-    Argument - -class
-            use Object::Quick '-class';
+    qclear()
+        Returns a special reference that when used as an argument, will
+        cause Mock::Quick::Object methods to be cleared.
 
-        Import all class methods in function form so you can use
-
-            method( ... );
-
-        Instead of
-
-            Object::Quick->method( ... );
-
-    Argument - -class
-        Same as:
-
-            use Object::Quick qw/-obj -class/;
-
-OBJECT METHODS
-    Anything that is a legal method name can be used. Can be used to get or
-    set the attribute of the object. If given an Object::Quick::Method
-    object then all future calls to that method will run the Method with any
-    arguments provided. Methods can be cleared by using the
-    $Object::Quick::CLEAR variable as an argument to the method, that is all
-    the clear() shortcut function does.
-
-    At object construction the following methods are added to your object.
-    If you do not want these methods you can override them by providing your
-    own.
-
-        use Object::Quick 'obj', 'method';
-
-        # Has methods following standard perl object conventions
-        my $obj = obj;
-
-        # Leave-out or override some standard object methods.
-        my $obj = obj( can => undef, DESTROY => method { ... }, ... );
-
-    $obj->new( key => 'val' )
-        This will create a new object with all the same methods as the
-        original as well as any data or methods provided to new().
-
-    $obj->can( $name )
-        Always returns a subref, there is never a case where it will return
-        undef on an object.
-
-            use Object::Quick 'obj';
-            my $obj = obj;
-
-            my $sub = $obj->can( 'stuff' );
-            $obj->$sub( 'value' );
-
-    $obj->isa( $package )
-        Works as expected
-
-    $obj->DESTROY
-        Currently does nothing except return true.
-
-CLASS METHODS
-    They can only be used as class methods. When used as object method they
-    will act like any other accessor. This allows for objects with
-    attributes named 'new', 'import', and 'AUTOLOAD', etc...
-
-    When -class is provided as an argument to use, class methods are
-    imported as functions. Heres an example:
-
-        use Object::Quick 'obj';
-        my $obj = obj();
-        my $methods Object::Quick->methods( $obj );
-
-    Can also be done like this:
-
-        use Object::Quick qw/obj -class/;
-        my $obj = obj();
-        my $methods = methods( $obj );
-
-    Notes:
-
-    new(), import(), and AUTOLOAD() are not imported when package is used
-    with -class.
-
-    $obj = $class->new( $hashref )
-    $obj = $class->new( %hash )
-    $obj = $class->new()
-        The object constructor. Creates a new instance of an object with the
-        provided hash. If no hash is provided an anonymous one will be
-        created.
-
-    $clone = $class->clone( $obj )
-        Clone an Object::Quick object. This is not a deep copy, a new
-        reference is created and blessed, however it goes no deeper.
-
-    $hash = $class->methods( $obj )
-        Returns a hash with all the Methods in the object, method names are
-        the keys.
-
-    $class->add_methods( $obj, @flags, name => sub { ... }, nameb => sub {
-    ... })
-        Add the specified methods to $obj. @flags is optional. Flags are any
-        arguments specified after $obj that start with a '-' up until the
-        first argument that does not start with a '-'.
-
-        Possible Flags:
-
-        -replace: Replace existing methods with those being added, normally
-        existing methods will not be overriden.
-
-    my $new = $class->instance( $obj, @attributes )
-        Crate a new instance of the given object; that is create a new
-        object with all the same methods, but none of the accessor values.
-
-    $class->inherit( $one, $two, @flags )
-        Give $one all the methods currently in $two. Existing methods in
-        $one will not be overriden by those in $two unless the '-replace'
-        flag is specified.
-
-    $class->class_methods( $obj, @flags )
-        Give $obj object method forms of all the class methods except for
-        new, import, and AUTOLOAD. existing methods in $obj will not be
-        overriden unless the '-replace' flag is specified.
-
-        example:
-
-            use Object::Quick 'obj';
-            my $obj = obj();
-            Object::Quick->class_methods( $obj );
-
-            my $new = $obj->clone;
-            my $methods = $obj->methods;
-            $obj->inherit( $two );
-            $new = $obj->instance;
-
-MAGIC
-    $class->import()
-    $class->import( @args )
-        Automatically called when you use Object::Quick. The optional
-        arguments are the names you want to use for the shortcut functions.
-
-    AUTOLOAD()
-        This is a special method. This is where the magic happens. Read the
-        perldoc for AUTOLOAD for more details.
+    qmeth { my $self = shift; ... }
+        Define a method for an Mock::Quick::Object instance.
 
 AUTHORS
     Chad Granum exodist7@gmail.com
 
 COPYRIGHT
-    Copyright (C) 2010 Chad Granum
+    Copyright (C) 2011 Chad Granum
 
-    Object-Quick is free software; Standard perl licence.
+    Mock-Quick is free software; Standard perl licence.
 
-    Object-Quick is distributed in the hope that it will be useful, but
+    Mock-Quick is distributed in the hope that it will be useful, but
     WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the license for
     more details.

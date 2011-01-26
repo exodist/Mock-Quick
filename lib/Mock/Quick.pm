@@ -54,7 +54,7 @@ object falls out of scope the original class is restored.
 
     use Mock::Quick;
 
-    my $obj = obj(
+    my $obj = qobj(
         foo => 'bar',            # define attribute
         do_it => qmeth { ... },  # define method
         ...

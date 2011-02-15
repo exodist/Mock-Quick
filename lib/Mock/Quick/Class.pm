@@ -89,28 +89,37 @@ sub _is_sub_ref {
 sub override {
     my $self = shift;
     my $package = $self->package;
-    my ( $name, $orig_value ) = @_;
-    my $real_value = _is_sub_ref( $orig_value )
-        ? $orig_value
-        : sub { $orig_value };
+    my %pairs = @_;
+    my @originals;
 
-    my $original = $package->can( $name );
-    $self->{$name} ||= $original;
-    inject( $package, $name, $real_value );
-    return $original;
+    while( my ( $name, $orig_value ) = each %pairs) {
+
+        my $real_value = _is_sub_ref( $orig_value )
+            ? $orig_value
+            : sub { $orig_value };
+
+        my $original = $package->can( $name );
+        $self->{$name} ||= $original;
+        inject( $package, $name, $real_value );
+
+        push @originals, $original;
+    }
+    return @originals;
 }
 
 sub restore {
     my $self = shift;
-    my ( $name ) = @_;
-    my $original = $self->{$name};
 
-    if ( $original ) {
-        my $sub = _is_sub_ref( $original ) ? $original : sub { $original };
-        inject( $self->package, $name, $sub );
-    }
-    else {
-        $self->clear( $name );
+    while( my $name = shift @_) {
+        my $original = $self->{$name};
+
+        if ( $original ) {
+            my $sub = _is_sub_ref( $original ) ? $original : sub { $original };
+            inject( $self->package, $name, $sub );
+        }
+        else {
+            $self->clear( $name );
+        }
     }
 }
 

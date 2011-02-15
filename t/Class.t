@@ -64,6 +64,14 @@ tests override => sub {
     is( $obj->package->bar, 'xxx', "overriden" );
     $obj->restore( 'bar' );
     ok( !$obj->package->can( 'bar' ), "original value is nill" );
+
+    # Multiple overrides
+    $obj->override( foo => sub { 'foo' }, bar => sub { 'bar' } );
+    is $obj->package->foo => 'foo', "overriden";
+    is $obj->package->bar => 'bar', "overriden";
+    $obj->restore(qw/ foo bar /);
+    is $obj->package->foo => 'bar', "original value";
+    ok !$obj->package->can('bar'), "original value is nil";
 };
 
 tests undefine => sub {

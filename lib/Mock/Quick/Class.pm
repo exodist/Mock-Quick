@@ -92,7 +92,8 @@ sub override {
     my %pairs = @_;
     my @originals;
 
-    while( my ( $name, $orig_value ) = each %pairs) {
+    for my $name ( keys %pairs ) {
+        my $orig_value = $pairs{$name};
 
         my $real_value = _is_sub_ref( $orig_value )
             ? $orig_value
@@ -104,13 +105,14 @@ sub override {
 
         push @originals, $original;
     }
+
     return @originals;
 }
 
 sub restore {
     my $self = shift;
 
-    while( my $name = shift @_) {
+    for my $name ( @_ ) {
         my $original = $self->{$name};
 
         if ( $original ) {
@@ -217,7 +219,13 @@ Provides class mocking for L<Mock::Quick>
 
 =head1 AUTHORS
 
-Chad Granum L<exodist7@gmail.com>
+=over 4
+
+=item Chad Granum L<exodist7@gmail.com>
+
+=item Glen Hinkle L<glen@empireenterprises.com>
+
+=back
 
 =head1 COPYRIGHT
 

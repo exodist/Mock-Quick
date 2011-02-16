@@ -7,7 +7,7 @@ use Mock::Quick::Object;
 use Mock::Quick::Method;
 use Mock::Quick::Util ();
 
-our $VERSION = '1.000_2';
+our $VERSION = '1.001';
 
 default_export qobj      => sub { Mock::Quick::Object->new( @_ )    };
 default_export qclass    => sub { Mock::Quick::Class->new( @_ )     };

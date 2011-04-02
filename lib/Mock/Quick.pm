@@ -5,16 +5,25 @@ use Exporter::Declare;
 use Mock::Quick::Class;
 use Mock::Quick::Object;
 use Mock::Quick::Method;
-use Mock::Quick::Util ();
+use Mock::Quick::Util;
 
 our $VERSION = '1.001';
 
-default_export qobj      => sub { Mock::Quick::Object->new( @_ )    };
-default_export qclass    => sub { Mock::Quick::Class->new( @_ )     };
-default_export qtakeover => sub { Mock::Quick::Class->takeover( @_ )};
-default_export qclear    => sub { \$Mock::Quick::Util::CLEAR        };
+default_export qobj       => sub { Mock::Quick::Object->new( @_ )     };
+default_export qclass     => sub { Mock::Quick::Class->new( @_ )      };
+default_export qtakeover  => sub { Mock::Quick::Class->takeover( @_ ) };
+default_export qimplement => sub { Mock::Quick::Class->implement( @_ )};
+default_export qclear     => sub { \$Mock::Quick::Util::CLEAR         };
+
+default_export qstrict => sub {
+    my $obj = Mock::Quick::Object->new( @_ );
+    strict->{ $obj } = 1;
+    return $obj;
+};
 
 default_export qmeth => sub(&){ Mock::Quick::Method->new( @_ )};
+
+purge_util();
 
 1;
 
@@ -74,6 +83,37 @@ object falls out of scope the original class is restored.
 
     # remove an attribute or method
     $obj->baz( qclear() );
+
+=head2 STRICTER MOCK
+
+    use Mock::Quick;
+
+    my $obj = qstrict(
+        foo => 'bar',            # define attribute
+        do_it => qmeth { ... },  # define method
+        ...
+    );
+
+    is( $obj->foo, 'bar' );
+    $obj->foo( 'baz' );
+    is( $obj->foo, 'baz' );
+
+    $obj->do_it();
+
+    # remove an attribute or method
+    $obj->baz( qclear() );
+
+You can no longer auto-vivify accessors and methods in strict mode:
+
+    # Cannot define the new attribute automatically
+    dies_ok { $obj->bar( 'xxx' ) };
+
+    # Cannot define a new method on the fly
+    dies_ok { $obj->baz( qmeth { ... }) };
+
+In order to add methods/accessors you need to create a control object:
+
+    TODO
 
 =head2 MOCKING CLASSES
 

@@ -166,11 +166,15 @@ Define a method for an L<Mock::Quick::Object> instance.
 
 Chad Granum L<exodist7@gmail.com>
 
+Ben Hengst L<notbenh@cpan.org>
+
 =head1 CONTRIBUTORS
 
 Contributors are listed as authors in modules they have touched.
 
 =over 4
+
+=item Ben Hengst L<notbenh@cpan.org>
 
 =item Glen Hinkle L<glen@empireenterprises.com>
 

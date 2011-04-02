@@ -51,7 +51,9 @@ sub DOES    { goto &isa                                    }
 sub VERSION { no warnings 'misc'; goto &UNIVERSAL::VERSION }
 
 obj_meth DESTROY => sub {
-    unshift @_ => ( shift( @_ ), 'DESTROY' );
+    my $self = shift;
+    delete strict()->{$self};
+    unshift @_ => ( $self, 'DESTROY' );
     goto &call;
 };
 

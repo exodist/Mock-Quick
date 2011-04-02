@@ -5,6 +5,7 @@ use warnings;
 use Fennec::Lite;
 use Test::Exception;
 use Mock::Quick::Method;
+use Mock::Quick::Object;
 
 BEGIN {
     tests load => sub {
@@ -40,7 +41,7 @@ tests alt_meth => sub {
 };
 
 tests call => sub {
-    my $ref = {};
+    my $ref = bless({}, 'Mock::Quick::Object');
     is( call( $ref, 'a' ), undef, "Not set" );
     is( call( $ref, 'a', 'a' ), 'a', "Alter" );
     is( call( $ref, 'a' ), 'a', "Altered" );
@@ -55,7 +56,7 @@ tests call => sub {
 };
 
 tests class_meth => sub {
-    my $ref = bless( { baz => 'baz' }, __PACKAGE__ );
+    my $ref = bless( { baz => 'baz' }, 'Mock::Quick::Object' );
     class_meth baz => sub { 'class baz' };
     is( $ref->baz, 'baz', "Object form" );
     is( __PACKAGE__->baz, 'class baz', "Class Form" );

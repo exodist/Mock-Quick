@@ -4,24 +4,35 @@ use warnings;
 use Exporter::Declare;
 use Mock::Quick::Class;
 use Mock::Quick::Object;
+use Mock::Quick::Object::Control;
 use Mock::Quick::Method;
 use Mock::Quick::Util;
 
 our $VERSION = '1.001';
 
-default_export qobj       => sub { Mock::Quick::Object->new( @_ )     };
-default_export qclass     => sub { Mock::Quick::Class->new( @_ )      };
-default_export qtakeover  => sub { Mock::Quick::Class->takeover( @_ ) };
-default_export qimplement => sub { Mock::Quick::Class->implement( @_ )};
-default_export qclear     => sub { \$Mock::Quick::Util::CLEAR         };
+default_export qclass     => sub { Mock::Quick::Class->new( @_ )           };
+default_export qtakeover  => sub { Mock::Quick::Class->takeover( @_ )      };
+default_export qimplement => sub { Mock::Quick::Class->implement( @_ )     };
+default_export qcontrol   => sub { Mock::Quick::Object::Control->new( @_ ) };
+
+default_export qobj => sub {
+    my $obj = Mock::Quick::Object->new( @_ );
+    my $control = Mock::Quick::Object::Control->new( $obj );
+    $control->strict(0);
+    return $obj unless wantarray;
+    return ( $obj, $control );
+};
 
 default_export qstrict => sub {
     my $obj = Mock::Quick::Object->new( @_ );
-    strict->{ $obj } = 1;
-    return $obj;
+    my $control = Mock::Quick::Object::Control->new( $obj );
+    $control->strict(1);
+    return $obj unless wantarray;
+    return ( $obj, $control );
 };
 
-default_export qmeth => sub(&){ Mock::Quick::Method->new( @_ )};
+default_export qclear => sub   { \$Mock::Quick::Util::CLEAR    };
+default_export qmeth  => sub(&){ Mock::Quick::Method->new( @_ )};
 
 purge_util();
 
@@ -111,11 +122,109 @@ You can no longer auto-vivify accessors and methods in strict mode:
     # Cannot define a new method on the fly
     dies_ok { $obj->baz( qmeth { ... }) };
 
-In order to add methods/accessors you need to create a control object:
+In order to add methods/accessors you need to create a control object.
 
-    TODO
+=head2 CONTROL OBJECTS
+
+Control objects are objects that let you interface a mocked object. They let
+you add attributes and methods, or even clear them. This is unnecessary unless
+you use strict mocking, or choose not to import qmeth() and qclear().
+
+=over 4
+
+=item Take Control
+
+    my $control = qcontrol( $obj );
+
+=item Add Attributes
+
+    $control->set_attributes(
+        foo => 'bar',
+        ...
+    );
+
+=item Add Methods
+
+    $control->set_methods(
+        do_it => sub { ... }, # No need to use qmeth()
+        ...
+    );
+
+=item Clear Attributes/Methods
+
+    $control->clear( qw/foo do_it .../ );
+
+=item Toggle strict
+
+    $control->strict( $BOOL );
+
+=item Create With Control
+
+    my ( $obj,  $control  ) = qobj ...;
+    my ( $sobj, $scontrol ) = qstrict ...;
+
+=back
 
 =head2 MOCKING CLASSES
+
+B<Note:> the control object returned here is of type L<Mock::Quick::Class>,
+wheras control objects for qobj style objects are of
+L<Mock::Quick::Object::Control>.
+
+=head3 IMPLEMENT A CLASS
+
+This will implement a class at the namespace provided via the -implement
+argument. The class must not already be loaded. Once complete the real class
+will be prevented from loading until you call undefine() on the control object.
+
+    use Mock::Quick;
+
+    my $control = qclass(
+        -implement => 'My::Package',
+
+        # Insert a generic new() method (blessed hash)
+        -with_new => 1,
+
+        # Inheritance
+        -subclass => 'Some::Class',
+        # Can also do
+        -subclass => [ 'Class::A', 'Class::B' ],
+
+        # generic get/set attribute methods.
+        -attributes => [ qw/a b c d/ ],
+
+        # Method that simply returns a value.
+        simple => 'value',
+
+        # Custom method.
+        method => sub { ... },
+    );
+
+    my $obj = $control->package->new;
+    # OR
+    my $obj = My::Package->new;
+
+    # Override a method
+    $control->override( foo => sub { ... });
+
+    # Restore it to the original
+    $control->restore( 'foo' );
+
+    # Remove the namespace we created, which would allow the real thing to load
+    # in a require or use statement.
+    $control->undefine();
+
+You can also use the qimplement() method instead of qclass:
+
+    use Mock::Quick;
+
+    my $control = qimplement 'Some::Package' => ( %args );
+
+=head3 ANONYMOUS MOCKED CLASS
+
+This is if you just need to generate a class where the package name does not
+matter. This is done when the -takeover and -implement arguments are both
+ommited.
 
     use Mock::Quick;
 
@@ -138,7 +247,7 @@ In order to add methods/accessors you need to create a control object:
         method => sub { ... },
     );
 
-    my $obj = $control->packahe->new;
+    my $obj = $control->package->new;
 
     # Override a method
     $control->override( foo => sub { ... });
@@ -149,11 +258,11 @@ In order to add methods/accessors you need to create a control object:
     # Remove the anonymous namespace we created.
     $control->undefine();
 
-=head2 TAKING OVER EXISTING CLASSES
+=head3 TAKING OVER EXISTING/LOADED CLASSES
 
     use Mock::Quick;
 
-    my $control = qtakeover( 'Some::Package' );
+    my $control = qtakeover 'Some::Package' => ( %overrides );
 
     # Override a method
     $control->override( foo => sub { ... });
@@ -161,8 +270,18 @@ In order to add methods/accessors you need to create a control object:
     # Restore it to the original
     $control->restore( 'foo' );
 
-    # Destroy the control object and completely restore the original class Some::Package.
+    # Destroy the control object and completely restore the original class
+    # Some::Package.
     $control = undef;
+
+You can also do this through qclass():
+
+    use Mock::Quick;
+
+    my $control = qclass(
+        -takeover => 'Some::Package',
+        %overrides
+    );
 
 =head1 EXPORTS
 
@@ -173,11 +292,20 @@ See L<Exporter::Declare/RENAMING IMPORTED ITEMS> for more information.
 
 =item $obj = qobj( attribute => value, ... )
 
+=item ( $obj, $control ) = qobj( attribute => value, ... )
+
 Create an object. Every possible attribute works fine as a get/set accessor.
 You can define other methods using qmeth {...} and assigning that to an
 attribute. You can clear a method using qclear() as an argument.
 
 See L<Mock::Quick::Object> for more.
+
+=item $obj = qstrict( attribute => value, ... )
+
+=item ( $obj, $control ) = qstrict( attribute => value, ... )
+
+Create a stricter object, get/set accessors will not autovivify into existance
+for undefined attributes.
 
 =item $control = qclass( -config => ..., name => $value || sub { ... }, ... )
 
@@ -185,11 +313,21 @@ Define an anonymous package with the desired methods and specifications.
 
 See L<Mock::Quick::Class> for more.
 
-=item $control = qtakeover( $package )
+=item $control = qclass( -takeover => $package, %overrides )
 
-Take control over an existing class.
+=item $control = qtakeover( $package, %overrides );
+
+Take over an existing class.
 
 See L<Mock::Quick::Class> for more.
+
+=item $control = qimplement( $package, -config => ..., name => $value || sub { ... }, ... )
+
+=item $control = qclass( -implement => $package, ... )
+
+Implement the given package to specifications, altering %INC so that the real
+class will not load. Destroying the control object will once again allow the
+original to load.
 
 =item qclear()
 
@@ -199,6 +337,9 @@ Mock::Quick::Object methods to be cleared.
 =item qmeth { my $self = shift; ... }
 
 Define a method for an L<Mock::Quick::Object> instance.
+
+default_export qcontrol   => sub { Mock::Quick::Object::Control->new( @_ ) };
+
 
 =back
 

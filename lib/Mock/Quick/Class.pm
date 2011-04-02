@@ -8,12 +8,48 @@ use Carp qw/croak/;
 
 our $ANON = 'AAAAAAAAAA';
 
-sub package { shift->{'-package'}}
+sub package      { shift->{'-package'}  }
+sub inc          { shift->{'-inc'}      }
+sub is_takeover  { shift->{'-takeover'} }
+sub is_implement { shift->{'-implement'}}
 
 sub takeover {
     my $class = shift;
-    my ( $package ) = @_;
-    return bless( { -package => $package, -takeover => 1 }, $class );
+    my ( $package, %params ) = @_;
+
+    my $self = bless( { -package => $package, -takeover => 1 }, $class );
+
+    for my $key ( keys %params ) {
+        croak "param '$key' is not valid in a takeover"
+            if $key =~ m/^-/;
+        $self->override( $key => $params{$key} );
+    }
+
+    return $self;
+}
+
+sub implement {
+    my $class = shift;
+    my ( $package, %params ) = @_;
+    my $caller = delete $params{'-caller'} || [caller()];
+
+    my $inc = $package;
+    $inc =~ s|::|/|g;
+    $inc .= '.pm';
+
+    croak "$package has already been loaded, cannot implement it."
+        if $INC{$inc};
+
+    $INC{$inc} = $caller->[1];
+
+    my $self = bless(
+        { -package => $package, -implement => 1, -inc => $inc },
+        $class
+    );
+
+    $self->_configure( %params );
+
+    return $self;
 }
 
 alt_meth new => (
@@ -21,29 +57,47 @@ alt_meth new => (
     class => sub {
         my $class = shift;
         my %params = @_;
+
+        croak "You cannot combine '-takeover' and '-implement' arguments"
+            if $params{'-takeover'} && $params{'-implement'};
+
+        return $class->takeover( delete( $params{'-takeover'} ), %params )
+            if $params{'-takeover'};
+
+        return $class->implement( delete( $params{'-implement'} ), %params )
+            if $params{'-implement'};
+
         my $package = __PACKAGE__ . "::__ANON__::" . $ANON++;
 
         my $self = bless( { %params, -package => $package }, $class );
 
-        for my $key ( keys %params ) {
-            my $value = $params{$key};
-
-            if ( $key =~ m/^-/ ) {
-                $self->configure( $key, $value );
-            }
-            elsif( _is_sub_ref( $value )) {
-                inject( $package, $key, $value );
-            }
-            else {
-                inject( $package, $key, sub { $value });
-            }
-        }
+        $self->_configure( %params );
 
         return $self;
     }
 );
 
-sub configure {
+sub _configure {
+    my $self = shift;
+    my %params = @_;
+    my $package = $self->package;
+
+    for my $key ( keys %params ) {
+        my $value = $params{$key};
+
+        if ( $key =~ m/^-/ ) {
+            $self->_configure_pair( $key, $value );
+        }
+        elsif( _is_sub_ref( $value )) {
+            inject( $package, $key, $value );
+        }
+        else {
+            inject( $package, $key, sub { $value });
+        }
+    }
+}
+
+sub _configure_pair {
     my $self = shift;
     my ( $param, $value ) = @_;
     my $package = $self->package;
@@ -120,12 +174,12 @@ sub restore {
             inject( $self->package, $name, $sub );
         }
         else {
-            $self->clear( $name );
+            $self->_clear( $name );
         }
     }
 }
 
-sub clear {
+sub _clear {
     my $self = shift;
     my ( $name ) = @_;
     my $package = $self->package;
@@ -138,14 +192,15 @@ sub undefine {
     my $self = shift;
     my $package = $self->package;
     croak "Refusing to undefine a class that was taken over."
-        if $self->{'-takeover'};
+        if $self->is_takeover;
     no strict 'refs';
     undef( *{"$package\::"} );
+    delete $INC{$self->inc} if $self->is_implement;
 }
 
 sub DESTROY {
     my $self = shift;
-    return unless $self->{'-takeover'};
+    return unless $self->is_takeover;
     for my $sub ( keys %{$self} ) {
         next if $sub =~ m/^-/;
         $self->restore( $sub );
@@ -168,7 +223,63 @@ Provides class mocking for L<Mock::Quick>
 
 =head1 SYNOPSIS
 
-=head2 MOCKING CLASSES
+=head2 IMPLEMENT A CLASS
+
+This will implement a class at the namespace provided via the -implement
+argument. The class must not already be loaded. Once complete the real class
+will be prevented from loading until you call undefine() on the control object.
+
+    use Mock::Quick::Class;
+
+    my $control = Mock::Quick::Class->new(
+        -implement => 'My::Package',
+
+        # Insert a generic new() method (blessed hash)
+        -with_new => 1,
+
+        # Inheritance
+        -subclass => 'Some::Class',
+        # Can also do
+        -subclass => [ 'Class::A', 'Class::B' ],
+
+        # generic get/set attribute methods.
+        -attributes => [ qw/a b c d/ ],
+
+        # Method that simply returns a value.
+        simple => 'value',
+
+        # Custom method.
+        method => sub { ... },
+    );
+
+    my $obj = $control->package->new;
+    # OR
+    my $obj = My::Package->new;
+
+    # Override a method
+    $control->override( foo => sub { ... });
+
+    # Restore it to the original
+    $control->restore( 'foo' );
+
+    # Remove the namespace we created, which would allow the real thing to load
+    # in a require or use statement.
+    $control->undefine();
+
+You can also use the 'implement' method instead of new:
+
+    use Mock::Quick::Class;
+
+    my $control = Mock::Quick::Class->implement(
+        'Some::Package',
+        %args
+    );
+
+=head2 ANONYMOUS MOCKED CLASS
+
+This is if you just need to generate a class where the package name does not
+matter. This is done when the -takeover and -implement arguments are both
+ommited.
 
     use Mock::Quick::Class;
 
@@ -202,7 +313,7 @@ Provides class mocking for L<Mock::Quick>
     # Remove the anonymous namespace we created.
     $control->undefine();
 
-=head2 TAKING OVER EXISTING CLASSES
+=head2 TAKING OVER EXISTING/LOADED CLASSES
 
     use Mock::Quick::Class;
 
@@ -214,8 +325,18 @@ Provides class mocking for L<Mock::Quick>
     # Restore it to the original
     $control->restore( 'foo' );
 
-    # Destroy the control object and completely restore the original class Some::Package.
+    # Destroy the control object and completely restore the original class
+    # Some::Package.
     $control = undef;
+
+You can also do this through new()
+
+    use Mock::Quick::Class;
+
+    my $control = Mock::Quick::Class->new(
+        -takeover => 'Some::Package',
+        %overrides
+    );
 
 =head1 AUTHORS
 

@@ -91,12 +91,26 @@ tests takeover => sub {
     $obj->restore( 'foo' );
     is( Baz->foo, 'foo', 'original' );
 
-    $obj = $CLASS->takeover( 'Baz' );
+    $obj = $CLASS->new( -takeover => 'Baz' );
     is( Baz->foo, 'foo', 'original' );
     $obj->override( 'foo', sub { 'new foo' });
     is( Baz->foo, 'new foo', "override" );
     $obj = undef;
     is( Baz->foo, 'foo', 'original' );
+};
+
+tests implement => sub {
+    my $obj = $CLASS->implement( 'Foox', a => sub { 'a' }, -with_new => 1 );
+    lives_ok { require Foox; 1 } "Did not try to load Foox";
+    can_ok( 'Foox', 'new' );
+    $obj->undefine();
+    throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
+
+    $obj = $CLASS->new( -implement => 'Foox', a => sub { 'a' }, -with_new => 1 );
+    lives_ok { require Foox; 1 } "Did not try to load Foox";
+    can_ok( 'Foox', 'new' );
+    $obj->undefine();
+    throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
 };
 
 run_tests;

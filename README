@@ -29,7 +29,7 @@ SYNOPSIS
   MOCKING OBJECTS
         use Mock::Quick;
 
-        my $obj = obj(
+        my $obj = qobj(
             foo => 'bar',            # define attribute
             do_it => qmeth { ... },  # define method
             ...

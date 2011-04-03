@@ -105,11 +105,13 @@ tests implement => sub {
     can_ok( 'Foox', 'new' );
     $obj->undefine();
     throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
+    $obj = undef;
 
     $obj = $CLASS->new( -implement => 'Foox', a => sub { 'a' }, -with_new => 1 );
     lives_ok { require Foox; 1 } "Did not try to load Foox";
     can_ok( 'Foox', 'new' );
-    $obj->undefine();
+    ok( $obj, "Keeping it in scope." );
+    $obj = undef;
     throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
 };
 

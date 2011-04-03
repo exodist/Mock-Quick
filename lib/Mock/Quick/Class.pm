@@ -4,7 +4,7 @@ use warnings;
 
 use Mock::Quick::Util;
 use Scalar::Util qw/blessed/;
-use Carp qw/croak/;
+use Carp qw/croak confess/;
 
 our $ANON = 'AAAAAAAAAA';
 
@@ -12,6 +12,12 @@ sub package      { shift->{'-package'}  }
 sub inc          { shift->{'-inc'}      }
 sub is_takeover  { shift->{'-takeover'} }
 sub is_implement { shift->{'-implement'}}
+
+sub metrics {
+    my $self = shift;
+    $self->{'-metrics'} ||= {};
+    return $self->{'-metrics'};
+}
 
 sub takeover {
     my $class = shift;
@@ -81,6 +87,7 @@ sub _configure {
     my $self = shift;
     my %params = @_;
     my $package = $self->package;
+    my $metrics = $self->metrics;
 
     for my $key ( keys %params ) {
         my $value = $params{$key};
@@ -89,18 +96,19 @@ sub _configure {
             $self->_configure_pair( $key, $value );
         }
         elsif( _is_sub_ref( $value )) {
-            inject( $package, $key, $value );
+            inject( $package, $key, sub { $metrics->{$key}++; $value->() });
         }
         else {
-            inject( $package, $key, sub { $value });
+            inject( $package, $key, sub { $metrics->{$key}++; $value });
         }
     }
 }
 
 sub _configure_pair {
-    my $self = shift;
+    my $control = shift;
     my ( $param, $value ) = @_;
-    my $package = $self->package;
+    my $package = $control->package;
+    my $metrics = $control->metrics;
 
     if ( $param eq '-subclass' ) {
         $value = [ $value ] unless ref $value eq 'ARRAY';
@@ -112,8 +120,11 @@ sub _configure_pair {
         for my $attr ( @$value ) {
             inject( $package, $attr, sub {
                 my $self = shift;
-                croak "$attr() called on '$self' instead of an instance"
+
+                croak "$attr() called on class '$self' instead of an instance"
                     unless blessed( $self );
+
+                $metrics->{$attr}++;
                 ( $self->{$attr} ) = @_ if @_;
                 return $self->{$attr};
             });
@@ -122,9 +133,12 @@ sub _configure_pair {
     elsif ( $param eq '-with_new' ) {
         inject( $package, 'new', sub {
             my $class = shift;
+            my %proto = @_;
+            $metrics->{new}++;
+
             croak "new() cannot be called on an instance"
                 if blessed( $class );
-            my %proto = @_;
+
             return bless( \%proto, $class );
         });
     }
@@ -145,13 +159,14 @@ sub override {
     my $package = $self->package;
     my %pairs = @_;
     my @originals;
+    my $metrics = $self->metrics;
 
     for my $name ( keys %pairs ) {
         my $orig_value = $pairs{$name};
 
         my $real_value = _is_sub_ref( $orig_value )
-            ? $orig_value
-            : sub { $orig_value };
+            ? sub { $metrics->{$name}++; return $orig_value->() }
+            : sub { $metrics->{$name}++; return $orig_value };
 
         my $original = $package->can( $name );
         $self->{$name} ||= $original;
@@ -168,6 +183,7 @@ sub restore {
 
     for my $name ( @_ ) {
         my $original = $self->{$name};
+        delete $self->metrics->{$name};
 
         if ( $original ) {
             my $sub = _is_sub_ref( $original ) ? $original : sub { $original };
@@ -200,7 +216,8 @@ sub undefine {
 
 sub DESTROY {
     my $self = shift;
-    return unless $self->is_takeover;
+    return $self->undefine unless $self->is_takeover;
+
     for my $sub ( keys %{$self} ) {
         next if $sub =~ m/^-/;
         $self->restore( $sub );
@@ -337,6 +354,42 @@ You can also do this through new()
         -takeover => 'Some::Package',
         %overrides
     );
+
+=head1 METHODS
+
+=over 4
+
+=item $package = $obj->package()
+
+Get the name of the package controlled by this object.
+
+=item $bool = $obj->is_takeover()
+
+Check if the control object was created to takeover an existing class.
+
+=item $bool = $obj->is_implement()
+
+Check if the control object was created to implement a class.
+
+=item $data = $obj->metrics()
+
+Returns a hash where keys are method names, and values are the number of times
+the method has been called. When a method is altered or removed the key is
+deleted.
+
+=item $obj->override( name => sub { ... })
+
+Override a method.
+
+=item $obj->restore( $name )
+
+Restore a method (Resets metrics)
+
+=item $obj->undefine()
+
+Undefine the package controlled by the control.
+
+=back
 
 =head1 AUTHORS
 

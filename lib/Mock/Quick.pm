@@ -283,6 +283,15 @@ You can also do this through qclass():
         %overrides
     );
 
+=head1 METRICS
+
+All control objects have a 'metrics' method. The metrics method returns a hash
+where keys are method names, and values are the number of times the method has
+been called. When a method is altered or removed the key is deleted.
+
+Metrics only apply to mocked methods. When you takeover an already loaded class
+metrics will only track overriden methods.
+
 =head1 EXPORTS
 
 Mock-Quick uses L<Exporter::Declare>. This allows for exports to be prefixed or renamed.

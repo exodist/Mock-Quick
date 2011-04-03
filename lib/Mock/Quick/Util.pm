@@ -43,8 +43,11 @@ sub call {
 
     if ( @_ && ref $_[0] && $_[0] == \$CLEAR ) {
         delete $self->{ $name };
+        delete $control->metrics->{$name};
         return;
     }
+
+    $control->metrics->{$name}++;
 
     return $self->{ $name }->( $self, @_ )
         if exists(  $self->{ $name })

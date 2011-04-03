@@ -34,7 +34,8 @@ sub set_attributes {
 sub clear {
     my $self = shift;
     for my $field ( @_ ) {
-        delete $self->target->{ $field };
+        delete $self->target->{$field};
+        delete $self->metrics->{$field};
     }
 }
 
@@ -42,6 +43,12 @@ sub strict {
     my $self = shift;
     ($META{$self->target}->{strict}) = @_ if @_;
     return $META{$self->target}->{strict};
+}
+
+sub metrics {
+    my $self = shift;
+    $META{$self->target}->{metrics} ||= {};
+    return $META{$self->target}->{metrics};
 }
 
 sub _clean {
@@ -95,6 +102,12 @@ Remove attributes/methods.
 =item $control->strict( $BOOL )
 
 Enable/Disable strict mode.
+
+=item $data = $control->metrics()
+
+Returns a hash where keys are method names, and values are the number of times
+the method has been called. When a method is altered or removed the key is
+deleted.
 
 =back
 

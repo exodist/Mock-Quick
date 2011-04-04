@@ -19,6 +19,8 @@ tests object => sub {
     my $one = qobj( foo => 'bar' );
     isa_ok( $one, 'Mock::Quick::Object' );
     is( $one->foo, 'bar', "created properly" );
+    is( $one->foo( 'blah' ), 'blah', "Setting foo" );
+    is( $one->foo, 'blah', "foo was set" );
 
     my $two = qmeth { 'vm' };
     isa_ok( $two, 'Mock::Quick::Method' );
@@ -51,6 +53,9 @@ tests object => sub {
     isa_ok( $six, 'Mock::Quick::Object' );
     isa_ok( $scontrol, 'Mock::Quick::Object::Control' );
     ok( $scontrol->strict, "strict" );
+    is( $six->foo, 'bar', "created properly" );
+    is( $six->foo( 'blah' ), 'blah', "Setting foo" );
+    is( $six->foo, 'blah', "foo was set" );
 };
 
 tests class => sub {

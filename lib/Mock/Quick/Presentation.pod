@@ -1,0 +1,255 @@
+=pod
+
+=head1 NAME
+
+Mock::Quick::Presentation - Presentation of Mock::Quick to PDX.pm
+
+=head1 DESCRIPTION
+
+This is a presentation for Mock::Quick. This presentation was written for the
+portland perl mongers for the meeting on 04/13/2011.
+
+=head1 QUICK OBJECTS
+
+=over 4
+
+=item Quick objects were concieved as an api stand-in
+
+=item Emulates objects that provid fairly static information
+
+=item Useful when the information in the object is not relivant to the test
+
+=back
+
+An example function to test:
+
+    sub add_and_append {
+        my ( $numA, $numB, $subsystem ) = @_;
+        my $sum = $numA + $numB;
+
+        return $subsystem->system_name . ":" . $sum;
+    }
+
+=over 4
+
+=item We only want to test the addition, and the appending
+
+=item We do not really care what subsystem->system_name returns (tested elsware)
+
+=item Subsystem->new() needs 20 arguments, all are used to by system_name()
+
+=back
+
+Thats where quick objects come in:
+
+    is(
+        add_and_append( 2, 3, qobj( system_name => 'foo' )),
+        "foo:5",
+        "add_and_append works"
+    );
+
+=head2 METHOD AUTOVIVIFYING
+
+Sometimes you need to pass in an object that has more methods than you care to
+mock out, they only need to be present and return something.
+
+Thats where the next feature of Quick Objects comes in. Quick objects
+will autovivify methods as they are needed. The new methods will be read/write
+accessors.
+
+    my $obj = qobj();
+    $obj->foo( 'bar' );
+    is( $obj->foo, 'bar', "foo attribute was set" );
+    is(
+        $obj->foo( 'baz' ),
+        'baz',
+        "remembers and returns whatever argument you give it."
+    );
+
+=head2 STRICT OBJECTS
+
+=over 4
+
+=item Autovivifying can be bad
+
+=item Autovivification has been reported as a bug in hashes
+
+For cases where you do not want autovivifying you can use strict objects. A
+strict object will not autovivify.
+
+    my $obj = qstrict( foo => 'foo' );
+    is( $obj->foo, 'foo' );
+    dies_ok { $obj->bar } "no bar() method defined";
+
+=back
+
+=head3 But what if you want to change the specification later?
+
+Easy!
+
+in list context C<qobj> and C<qstrict> return both the new object, and a
+control object that provides a manipulation interface.
+
+    my ( $obj, $control ) = qstrict( foo => 'foo' );
+    $control->set_attributes( bar => 'bar' );
+
+=head3 Why not just provide a manipulation interface as a method on the object?
+
+because it might conflict with the api you are attempting to mock.
+
+=head2 CUSTOM METHODS
+
+More often than not you need to mock out methods more complicated than
+accessors. You can add them to your quick object in 2 ways.
+
+You can't just assign a coderef to an accessor, that would just result in an
+accessor that returns a coderef. This is important because there are cases
+where that is what you really want.
+
+The original way to create a custom method is the C<qmeth()> function.
+
+    $obj->new_method( qmeth {
+        my $self = shift;
+        ...
+        return 'whatever';
+    });
+
+This will add a method that will be run next time you call
+C<$obj-E<gt>new_method>.
+
+Arguments will not be used to replace the method on the object like they would
+a in a get/set accessor.
+
+Some people have expressed displeasure with this API. C<qmeth {...}> seems too
+magical. The alternative is to use the control object.
+
+    my ( $obj, $control ) = qobj(...);
+    $control->set_methods( foo => sub { ... });
+
+=head2 CLEARING METHODS/ATTRIBUTES
+
+We have so far seen many ways to add methods, attributes and accessors to a
+quick object. But you can also clear them! This is particularly useful in
+strict objects where they will not autovivify back into existance.
+
+One again there are 2 ways to clear an attribute or method. The original way
+using the C<qclear> method, and the new way using the control object.
+
+    # Remove the foo() attribute and any associated value/method
+    $obj->foo( qclear() );
+
+    # Remove a whole list of attributes
+    $control->clear( qw/foo bar baz/ );
+
+=head2 CONTROL OBJECT
+
+The control object provides 2 additional methods.
+
+=over 4
+
+=item $control->strict( BOOL )
+
+Lets you toggle strict mode on and off for your object.
+
+=item $control->metrics
+
+Returns a hashref with all current attributes/methods as keys, the values
+associated with them are the counts of how many times that attribute has been
+called. Clearing an attribute will reset its metrics.
+
+=back
+
+=head1 MOCKING CLASSES
+
+Sometimes a quick object is not sufficient.
+
+=over 4
+
+=item The object you need to mock is instantiated inside the function you're testing
+
+=item You want to preserve the original class, but you need to override a subset of methods
+
+=item You want to replace the original class and prevent it from loading
+
+=item You want to implement a temporary but re-usable class specification
+
+=back
+
+=head2 TAKING OVER A CLASS
+
+The class is loaded, you want to change parts of it
+
+=over 4
+
+=item Take control of the class
+
+    require Some::Package;
+    my $control = qtakeover( 'Some::Package' );
+
+=item Have your way with it
+
+    $control->override(
+        foo => sub { ... }
+        bar => sub { ... }
+    );
+
+=item Restore the original method
+
+    $control->restore( 'foo' );
+
+=item The original class is completely restored when the control object is destroyed.
+
+    $control = undef;
+
+=back
+
+=head2 USURPING A CLASS
+
+The class is not loaded, you want to keep it that way, and put something in it's place.
+
+=over 4
+
+=item Create the package, %INC is updated for you to prevent the real one from loading.
+
+    my $control = qimplement Some::Package => ( ... );
+
+=back
+
+=head3 arguments
+
+=over 4
+
+=item auto-create new()
+
+    -with_new => 1,
+
+=item subclassing
+
+    -subclass => $class || [ @CLASSES ],
+
+=item quickly generate attributes (read/write)
+
+    -attributes => [qw/ foo bar baz /]
+
+=item simple return value methods
+
+    method => 'value'
+
+=item custom methods
+
+    do_it => sub { ... }
+
+=back
+
+The control object returned is identical to that from C<qtakeover()>.
+
+=head2 ANONYMOUS CLASSES
+
+An anonymous class is the same as userping a class, except instead of using a
+real package a temporary one is created.
+
+    my $control = qclass( ... )
+
+Takes all the same arguments as qimplement.
+
+=cut

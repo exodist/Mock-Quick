@@ -1,0 +1,46 @@
+=pod
+
+=head2 USURPING A CLASS
+
+The class is not loaded, you want to keep it that way, and put something in it's place.
+
+=over 4
+
+=item Create the package, %INC is updated for you to prevent the real one from loading.
+
+    my $control = qimplement Some::Package => ( ... );
+
+=back
+
+=head3 arguments
+
+=over 4
+
+=item auto-create new()
+
+    -with_new => 1,
+
+=item subclassing
+
+    -subclass => $class || [ @CLASSES ],
+
+=item quickly generate attributes (read/write)
+
+    -attributes => [qw/ foo bar baz /]
+
+=item simple return value methods
+
+    method => 'value'
+
+=item custom methods
+
+    do_it => sub { ... }
+
+=back
+
+The control object returned is identical to that from C<qtakeover()>.
+
+L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideK.pod>
+L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+
+=cut

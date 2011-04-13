@@ -1,0 +1,21 @@
+=pod
+
+=head2 CLEARING METHODS/ATTRIBUTES
+
+We have so far seen many ways to add methods, attributes and accessors to a
+quick object. But you can also clear them! This is particularly useful in
+strict objects where they will not autovivify back into existance.
+
+One again there are 2 ways to clear an attribute or method. The original way
+using the C<qclear> method, and the new way using the control object.
+
+    # Remove the foo() attribute and any associated value/method
+    $obj->foo( qclear() );
+
+    # Remove a whole list of attributes
+    $control->clear( qw/foo bar baz/ );
+
+L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideG.pod>
+L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideE.pod>
+
+=cut

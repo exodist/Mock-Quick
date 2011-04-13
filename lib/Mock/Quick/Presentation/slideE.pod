@@ -1,0 +1,35 @@
+=pod
+
+=head2 CUSTOM METHODS
+
+More often than not you need to mock out methods more complicated than
+accessors. You can add them to your quick object in 2 ways.
+
+You can't just assign a coderef to an accessor, that would just result in an
+accessor that returns a coderef. This is important because there are cases
+where that is what you really want.
+
+The original way to create a custom method is the C<qmeth()> function.
+
+    $obj->new_method( qmeth {
+        my $self = shift;
+        ...
+        return 'whatever';
+    });
+
+This will add a method that will be run next time you call
+C<$obj-E<gt>new_method>.
+
+Arguments will not be used to replace the method on the object like they would
+a in a get/set accessor.
+
+Some people have expressed displeasure with this API. C<qmeth {...}> seems too
+magical. The alternative is to use the control object.
+
+    my ( $obj, $control ) = qobj(...);
+    $control->set_methods( foo => sub { ... });
+
+L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideF.pod>
+L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideD.pod>
+
+=cut

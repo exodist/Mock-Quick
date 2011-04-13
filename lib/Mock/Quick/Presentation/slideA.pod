@@ -9,6 +9,6 @@ Mock::Quick::Presentation - Presentation of Mock::Quick to PDX.pm
 This is a presentation for Mock::Quick. This presentation was written for the
 portland perl mongers for the meeting on 04/13/2011.
 
-L<Next|Mock::Quick::Presentation::slideB>
+L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideB.pod>
 
 =cut

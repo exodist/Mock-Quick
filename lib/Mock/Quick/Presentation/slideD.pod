@@ -1,0 +1,37 @@
+=pod
+
+=head2 STRICT OBJECTS
+
+=over 4
+
+=item Autovivifying can be bad
+
+=item Autovivification has been reported as a bug in hashes
+
+For cases where you do not want autovivifying you can use strict objects. A
+strict object will not autovivify.
+
+    my $obj = qstrict( foo => 'foo' );
+    is( $obj->foo, 'foo' );
+    dies_ok { $obj->bar } "no bar() method defined";
+
+=back
+
+=head3 But what if you want to change the specification later?
+
+Easy!
+
+in list context C<qobj> and C<qstrict> return both the new object, and a
+control object that provides a manipulation interface.
+
+    my ( $obj, $control ) = qstrict( foo => 'foo' );
+    $control->set_attributes( bar => 'bar' );
+
+=head3 Why not just provide a manipulation interface as a method on the object?
+
+because it might conflict with the api you are attempting to mock.
+
+L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideE.pod>
+L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideC.pod>
+
+=cut

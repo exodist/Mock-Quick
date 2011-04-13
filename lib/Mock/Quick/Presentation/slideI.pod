@@ -1,0 +1,34 @@
+=pod
+
+=head2 TAKING OVER A CLASS
+
+The class is loaded, you want to change parts of it
+
+=over 4
+
+=item Take control of the class
+
+    require Some::Package;
+    my $control = qtakeover( 'Some::Package' );
+
+=item Have your way with it
+
+    $control->override(
+        foo => sub { ... }
+        bar => sub { ... }
+    );
+
+=item Restore the original method
+
+    $control->restore( 'foo' );
+
+=item The original class is completely restored when the control object is destroyed.
+
+    $control = undef;
+
+=back
+
+L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideH.pod>
+
+=cut

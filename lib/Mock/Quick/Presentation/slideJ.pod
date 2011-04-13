@@ -44,7 +44,7 @@ The control object returned is identical to that from C<qtakeover()>.
 
 =item Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideK.pod>
 
-=item Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+=item Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideI.pod>
 
 =back
 

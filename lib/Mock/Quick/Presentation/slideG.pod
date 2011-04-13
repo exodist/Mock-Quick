@@ -18,7 +18,7 @@ called. Clearing an attribute will reset its metrics.
 
 =back
 
-L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideH.pod>
-L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideF.pod>
+Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideH.pod>
+Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideF.pod>
 
 =cut

@@ -18,7 +18,7 @@ accessors.
         "remembers and returns whatever argument you give it."
     );
 
-L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideD.pod>
-L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideB.pod>
+Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideD.pod>
+Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideB.pod>
 
 =cut

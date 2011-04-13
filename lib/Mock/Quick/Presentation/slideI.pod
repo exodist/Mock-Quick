@@ -28,7 +28,7 @@ The class is loaded, you want to change parts of it
 
 =back
 
-L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
-L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideH.pod>
+Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideH.pod>
 
 =cut

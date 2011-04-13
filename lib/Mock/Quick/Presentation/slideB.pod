@@ -39,7 +39,7 @@ Thats where quick objects come in:
         "add_and_append works"
     );
 
-L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideC.pod>
-L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideA.pod>
+Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideC.pod>
+Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideA.pod>
 
 =cut

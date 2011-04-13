@@ -31,7 +31,7 @@ control object that provides a manipulation interface.
 
 because it might conflict with the api you are attempting to mock.
 
-L<Next|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideE.pod>
-L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideC.pod>
+Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideE.pod>
+Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideC.pod>
 
 =cut

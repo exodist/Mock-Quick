@@ -9,6 +9,6 @@ real package a temporary one is created.
 
 Takes all the same arguments as qimplement.
 
-L<Previous|https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
 
 =cut

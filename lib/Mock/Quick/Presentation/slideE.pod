@@ -29,7 +29,12 @@ magical. The alternative is to use the control object.
     my ( $obj, $control ) = qobj(...);
     $control->set_methods( foo => sub { ... });
 
-Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideF.pod>
-Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideD.pod>
+=over 4
+
+=item Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideF.pod>
+
+=item Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideD.pod>
+
+=back
 
 =cut

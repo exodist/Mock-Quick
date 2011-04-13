@@ -15,7 +15,12 @@ using the C<qclear> method, and the new way using the control object.
     # Remove a whole list of attributes
     $control->clear( qw/foo bar baz/ );
 
-Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideG.pod>
-Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideE.pod>
+=over 4
+
+=item Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideG.pod>
+
+=item Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideE.pod>
+
+=back
 
 =cut

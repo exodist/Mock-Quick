@@ -40,7 +40,12 @@ The class is not loaded, you want to keep it that way, and put something in it's
 
 The control object returned is identical to that from C<qtakeover()>.
 
-Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideK.pod>
-Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+=over 4
+
+=item Next: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideK.pod>
+
+=item Previous: L<https://github.com/exodist/Mock-Quick/blob/master/lib/Mock/Quick/Presentation/slideJ.pod>
+
+=back
 
 =cut

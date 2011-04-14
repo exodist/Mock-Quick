@@ -165,7 +165,7 @@ sub override {
         my $orig_value = $pairs{$name};
 
         my $real_value = _is_sub_ref( $orig_value )
-            ? sub { $metrics->{$name}++; return $orig_value->() }
+            ? sub { $metrics->{$name}++; goto &$orig_value }
             : sub { $metrics->{$name}++; return $orig_value };
 
         my $original = $package->can( $name );

@@ -96,7 +96,7 @@ sub _configure {
             $self->_configure_pair( $key, $value );
         }
         elsif( _is_sub_ref( $value )) {
-            inject( $package, $key, sub { $metrics->{$key}++; $value->() });
+            inject( $package, $key, sub { $metrics->{$key}++; $value->(@_) });
         }
         else {
             inject( $package, $key, sub { $metrics->{$key}++; $value });
@@ -165,7 +165,7 @@ sub override {
         my $orig_value = $pairs{$name};
 
         my $real_value = _is_sub_ref( $orig_value )
-            ? sub { $metrics->{$name}++; return $orig_value->() }
+            ? sub { $metrics->{$name}++; return $orig_value->(@_) }
             : sub { $metrics->{$name}++; return $orig_value };
 
         my $original = $package->can( $name );

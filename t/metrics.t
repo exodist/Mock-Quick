@@ -22,7 +22,7 @@ BEGIN {
 }
 
 tests object => sub {
-    my ($one, $control) = qobj( foo => 'bar', baz => qmeth { 'baz' });
+    my ($one, $control) = qobjc( foo => 'bar', baz => qmeth { 'baz' });
     $one->foo for 1 .. 4;
     $one->baz for 1 .. 10;
 
@@ -37,6 +37,17 @@ tests object => sub {
     $control->set_methods( foo => sub { 'foo' });
     $one->foo();
     is_deeply( $control->metrics, { foo => 1 }, "Kept metrics" );
+
+
+    my @args;
+    ($one, $control) = qobjc( foo => 'bar', baz => qmeth { @args = @_ });
+    $one->baz( 'a', 'b' );
+
+    is_deeply(
+        [ @args ],
+        [ $one, 'a', 'b' ],
+        "Got Arguments"
+    );
 };
 
 tests class => sub {

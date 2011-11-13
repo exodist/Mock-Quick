@@ -44,12 +44,12 @@ tests object => sub {
         qr/Can't locate object method "foo" in this instance/,
         "Strict mode";
 
-    my ( $five, $fcontrol ) = qobj( foo => 'bar' );
+    my ( $five, $fcontrol ) = qobjc( foo => 'bar' );
     isa_ok( $five, 'Mock::Quick::Object' );
     isa_ok( $fcontrol, 'Mock::Quick::Object::Control' );
     ok( !$fcontrol->strict, "not strict" );
 
-    my ( $six, $scontrol ) = qstrict( foo => 'bar' );
+    my ( $six, $scontrol ) = qstrictc( foo => 'bar' );
     isa_ok( $six, 'Mock::Quick::Object' );
     isa_ok( $scontrol, 'Mock::Quick::Object::Control' );
     ok( $scontrol->strict, "strict" );

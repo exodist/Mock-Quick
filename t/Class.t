@@ -1,4 +1,5 @@
 #!/usr/bin/perl
+package Foo::Bar;
 use strict;
 use warnings;
 
@@ -59,6 +60,13 @@ tests override => sub {
     is( $obj->package->foo, 'baz', "overriden" );
     $obj->restore( 'foo' );
     is( $obj->package->foo, 'bar', "original value" );
+
+    $obj->override( bub => Mock::Quick::Method->new( sub { print "VVV\n", return [@_] }));
+    is_deeply(
+        $obj->package->bub( 'a', 'b' ),
+        [ $obj->package, 'a', 'b' ],
+        "got args"
+    );
 
     $obj->override( 'bar', sub { 'xxx' });
     is( $obj->package->bar, 'xxx', "overriden" );

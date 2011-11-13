@@ -19,7 +19,13 @@ default_export qobj => sub {
     my $obj = Mock::Quick::Object->new( @_ );
     my $control = Mock::Quick::Object::Control->new( $obj );
     $control->strict(0);
-    return $obj unless wantarray;
+    return $obj;
+};
+
+default_export qobjc => sub {
+    my $obj = Mock::Quick::Object->new( @_ );
+    my $control = Mock::Quick::Object::Control->new( $obj );
+    $control->strict(0);
     return ( $obj, $control );
 };
 
@@ -27,7 +33,13 @@ default_export qstrict => sub {
     my $obj = Mock::Quick::Object->new( @_ );
     my $control = Mock::Quick::Object::Control->new( $obj );
     $control->strict(1);
-    return $obj unless wantarray;
+    return $obj;
+};
+
+default_export qstrictc => sub {
+    my $obj = Mock::Quick::Object->new( @_ );
+    my $control = Mock::Quick::Object::Control->new( $obj );
+    $control->strict(1);
     return ( $obj, $control );
 };
 
@@ -160,8 +172,10 @@ you use strict mocking, or choose not to import qmeth() and qclear().
 
 =item Create With Control
 
-    my ( $obj,  $control  ) = qobj ...;
-    my ( $sobj, $scontrol ) = qstrict ...;
+    my $obj = qobj ...;
+    my $obj = qstrict ...;
+    my ( $obj,  $control  ) = qobjc ...;
+    my ( $sobj, $scontrol ) = qstrictc ...;
 
 =back
 
@@ -301,7 +315,7 @@ See L<Exporter::Declare/RENAMING IMPORTED ITEMS> for more information.
 
 =item $obj = qobj( attribute => value, ... )
 
-=item ( $obj, $control ) = qobj( attribute => value, ... )
+=item ( $obj, $control ) = qobjc( attribute => value, ... )
 
 Create an object. Every possible attribute works fine as a get/set accessor.
 You can define other methods using qmeth {...} and assigning that to an
@@ -311,7 +325,7 @@ See L<Mock::Quick::Object> for more.
 
 =item $obj = qstrict( attribute => value, ... )
 
-=item ( $obj, $control ) = qstrict( attribute => value, ... )
+=item ( $obj, $control ) = qstrictc( attribute => value, ... )
 
 Create a stricter object, get/set accessors will not autovivify into existance
 for undefined attributes.

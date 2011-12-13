@@ -3,3 +3,4 @@ _build
 blib
 .git
 ^Build$
+^MYMETA\.json$

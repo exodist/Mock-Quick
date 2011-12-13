@@ -106,8 +106,10 @@ SYNOPSIS
             $control->strict( $BOOL );
 
     Create With Control
-            my ( $obj,  $control  ) = qobj ...;
-            my ( $sobj, $scontrol ) = qstrict ...;
+            my $obj = qobj ...;
+            my $obj = qstrict ...;
+            my ( $obj,  $control  ) = qobjc ...;
+            my ( $sobj, $scontrol ) = qstrictc ...;
 
   MOCKING CLASSES
     Note: the control object returned here is of type Mock::Quick::Class,
@@ -239,7 +241,7 @@ EXPORTS
     for more information.
 
     $obj = qobj( attribute => value, ... )
-    ( $obj, $control ) = qobj( attribute => value, ... )
+    ( $obj, $control ) = qobjc( attribute => value, ... )
         Create an object. Every possible attribute works fine as a get/set
         accessor. You can define other methods using qmeth {...} and
         assigning that to an attribute. You can clear a method using
@@ -248,7 +250,7 @@ EXPORTS
         See Mock::Quick::Object for more.
 
     $obj = qstrict( attribute => value, ... )
-    ( $obj, $control ) = qstrict( attribute => value, ... )
+    ( $obj, $control ) = qstrictc( attribute => value, ... )
         Create a stricter object, get/set accessors will not autovivify into
         existance for undefined attributes.
 

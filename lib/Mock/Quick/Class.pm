@@ -168,8 +168,7 @@ sub override {
             ? sub { $metrics->{$name}++; return $orig_value->(@_) }
             : sub { $metrics->{$name}++; return $orig_value };
 
-        my $original = $package->can( $name );
-        $self->{$name} ||= $original;
+        my $original = $self->original( $name );
         inject( $package, $name, $real_value );
 
         push @originals, $original;
@@ -178,11 +177,20 @@ sub override {
     return @originals;
 }
 
+sub original {
+    my $self = shift;
+    my ( $name ) = @_;
+    unless ( exists $self->{$name} ) {
+        $self->{$name} = $self->package->can( $name ) || undef;
+    }
+    return $self->{$name};
+}
+
 sub restore {
     my $self = shift;
 
     for my $name ( @_ ) {
-        my $original = $self->{$name};
+        my $original = $self->original($name);
         delete $self->metrics->{$name};
 
         if ( $original ) {
@@ -380,6 +388,17 @@ deleted.
 =item $obj->override( name => sub { ... })
 
 Override a method.
+
+=item $obj->original( $name );
+
+Get the original method (coderef). Note: The first time this is called it find
+and remembers the value of package->can( $name ). This means that if you modify
+or replace the method without using Mock::Quick before this is called, it will
+have the updated method, not the true original.
+
+The override() method will call this first to ensure the original method is
+cached and available for restore(). Once a value is set it is never replaced or
+cleared.
 
 =item $obj->restore( $name )
 

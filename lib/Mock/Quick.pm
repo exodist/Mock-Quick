@@ -8,7 +8,7 @@ use Mock::Quick::Object::Control;
 use Mock::Quick::Method;
 use Mock::Quick::Util;
 
-our $VERSION = '1.103';
+our $VERSION = '1.104';
 
 default_export qclass     => sub { Mock::Quick::Class->new( @_ )           };
 default_export qtakeover  => sub { Mock::Quick::Class->takeover( @_ )      };

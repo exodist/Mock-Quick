@@ -105,6 +105,18 @@ tests takeover => sub {
     is( Baz->foo, 'new foo', "override" );
     $obj = undef;
     is( Baz->foo, 'foo', 'original' );
+
+    $obj = $CLASS->new( -takeover => 'Baz' );
+    $obj->override( 'foo', sub {
+        my $class = shift;
+        return "PREFIX: " . $class->MQ_CONTROL->original( 'foo' )->();
+    });
+
+    is( Baz->foo, "PREFIX: foo", "Override and accessed original through MQ_CONTROL" );
+    $obj = undef;
+
+    is( Baz->foo, 'foo', 'original' );
+    ok( !Baz->can('MQ_CONTROL'), "Removed control" );
 };
 
 tests implement => sub {

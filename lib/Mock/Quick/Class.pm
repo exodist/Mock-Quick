@@ -3,7 +3,7 @@ use strict;
 use warnings;
 
 use Mock::Quick::Util;
-use Scalar::Util qw/blessed/;
+use Scalar::Util qw/blessed weaken/;
 use Carp qw/croak confess/;
 
 our $ANON = 'AAAAAAAAAA';
@@ -31,6 +31,8 @@ sub takeover {
         $self->override( $key => $params{$key} );
     }
 
+    $self->inject_meta();
+
     return $self;
 }
 
@@ -52,6 +54,8 @@ sub implement {
         { -package => $package, -implement => 1, -inc => $inc },
         $class
     );
+
+    $self->inject_meta();
 
     $self->_configure( %params );
 
@@ -77,11 +81,20 @@ alt_meth new => (
 
         my $self = bless( { %params, -package => $package }, $class );
 
+        $self->inject_meta();
+
         $self->_configure( %params );
 
         return $self;
     }
 );
+
+sub inject_meta {
+    my $self = shift;
+    my $weak_self = $self;
+    weaken $weak_self;
+    inject( $self->package, 'MQ_CONTROL', sub { $weak_self } );
+}
 
 sub _configure {
     my $self = shift;
@@ -226,6 +239,16 @@ sub DESTROY {
     my $self = shift;
     return $self->undefine unless $self->is_takeover;
 
+    my $package = $self->package;
+
+    {
+        no strict 'refs';
+        no warnings 'redefine';
+
+        my $ref = \%{"$package\::"};
+        delete $ref->{MQ_CONTROL};
+    }
+
     for my $sub ( keys %{$self} ) {
         next if $sub =~ m/^-/;
         $self->restore( $sub );
@@ -362,6 +385,26 @@ You can also do this through new()
         -takeover => 'Some::Package',
         %overrides
     );
+
+=head1 ACCESSING THE CONTROL OBJECY
+
+While the control object exists, it can be accessed via
+C<YOUR::PACKAGE->MQ_CONTROL()>. It is important to note that this method will
+dissapear whenever the control object you track falls out of scope.
+
+Example (taken from Class.t):
+
+    $obj = $CLASS->new( -takeover => 'Baz' );
+    $obj->override( 'foo', sub {
+        my $class = shift;
+        return "PREFIX: " . $class->MQ_CONTROL->original( 'foo' )->();
+    });
+
+    is( Baz->foo, "PREFIX: foo", "Override and accessed original through MQ_CONTROL" );
+    $obj = undef;
+
+    is( Baz->foo, 'foo', 'original' );
+    ok( !Baz->can('MQ_CONTROL'), "Removed control" );
 
 =head1 METHODS
 

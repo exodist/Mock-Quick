@@ -20,9 +20,8 @@ my $build = Module::Build->new(
     },
     meta_merge => {
         resources => {
-            repository  => 'http://github.com/exodist/Object-Quick',
-            bugtracker  => 'http://github.com/exodist/Object-Quick/issues',
-            homepage    => 'http://open-exodus.net/projects/Object-Quick'
+            repository  => 'http://github.com/exodist/Mock-Quick',
+            bugtracker  => 'http://github.com/exodist/Mock-Quick/issues',
         },
     }
 );

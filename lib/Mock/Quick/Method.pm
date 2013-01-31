@@ -2,12 +2,19 @@ package Mock::Quick::Method;
 use strict;
 use warnings;
 
-use Carp ();
+use Carp         ();
+use Scalar::Util ();
 
 sub new {
     my $class = shift;
     my ($sub) = @_;
-    return $sub if eval {$sub->isa($class)};
+
+    # Fixes #11
+    return $sub
+        if $sub
+        && Scalar::Util::blessed($sub)
+        && $sub->isa($class);
+
     Carp::croak "Constructor to $class takes a single codeblock"
         unless ref $sub eq 'CODE';
     return bless $sub, $class;

@@ -5,11 +5,19 @@ use warnings;
 use Test::More;
 
 BEGIN {
-    require_ok( 'Object::Quick' );
+
+    $SIG{__WARN__} = sub {
+        my $msg = shift;
+        print STDERR $msg unless $msg =~ m/Object::Quick is depricated/;
+    };
+
+    warn "foo";
+
+    require_ok('Object::Quick');
     Object::Quick->import();
     ok( !__PACKAGE__->can($_), "$_ not imported" ) for qw/obj method clear/;
 
-    Object::Quick->import( 'objx' );
+    Object::Quick->import('objx');
     ok( !__PACKAGE__->can($_), "$_ not imported" ) for qw/obj method clear/;
     can_ok( __PACKAGE__, 'objx' );
 
@@ -21,7 +29,7 @@ BEGIN {
     ok( !__PACKAGE__->can($_), "$_ not imported" ) for qw/obj method clear/;
     can_ok( __PACKAGE__, 'objz', 'vmz', 'clearz' );
 
-    Object::Quick->import( '-obj' );
+    Object::Quick->import('-obj');
     can_ok( __PACKAGE__, qw/obj method clear/ );
 }
 

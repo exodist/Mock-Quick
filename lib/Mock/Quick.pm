@@ -8,43 +8,43 @@ use Mock::Quick::Object::Control;
 use Mock::Quick::Method;
 use Mock::Quick::Util;
 
-our $VERSION = '1.104';
+our $VERSION = '1.105';
 
-default_export qclass     => sub { Mock::Quick::Class->new( @_ )           };
-default_export qtakeover  => sub { Mock::Quick::Class->takeover( @_ )      };
-default_export qimplement => sub { Mock::Quick::Class->implement( @_ )     };
-default_export qcontrol   => sub { Mock::Quick::Object::Control->new( @_ ) };
+default_export qclass     => sub { Mock::Quick::Class->new(@_) };
+default_export qtakeover  => sub { Mock::Quick::Class->takeover(@_) };
+default_export qimplement => sub { Mock::Quick::Class->implement(@_) };
+default_export qcontrol   => sub { Mock::Quick::Object::Control->new(@_) };
 
 default_export qobj => sub {
-    my $obj = Mock::Quick::Object->new( @_ );
-    my $control = Mock::Quick::Object::Control->new( $obj );
+    my $obj     = Mock::Quick::Object->new(@_);
+    my $control = Mock::Quick::Object::Control->new($obj);
     $control->strict(0);
     return $obj;
 };
 
 default_export qobjc => sub {
-    my $obj = Mock::Quick::Object->new( @_ );
-    my $control = Mock::Quick::Object::Control->new( $obj );
+    my $obj     = Mock::Quick::Object->new(@_);
+    my $control = Mock::Quick::Object::Control->new($obj);
     $control->strict(0);
     return ( $obj, $control );
 };
 
 default_export qstrict => sub {
-    my $obj = Mock::Quick::Object->new( @_ );
-    my $control = Mock::Quick::Object::Control->new( $obj );
+    my $obj     = Mock::Quick::Object->new(@_);
+    my $control = Mock::Quick::Object::Control->new($obj);
     $control->strict(1);
     return $obj;
 };
 
 default_export qstrictc => sub {
-    my $obj = Mock::Quick::Object->new( @_ );
-    my $control = Mock::Quick::Object::Control->new( $obj );
+    my $obj     = Mock::Quick::Object->new(@_);
+    my $control = Mock::Quick::Object::Control->new($obj);
     $control->strict(1);
     return ( $obj, $control );
 };
 
-default_export qclear => sub   { \$Mock::Quick::Util::CLEAR    };
-default_export qmeth  => sub(&){ Mock::Quick::Method->new( @_ )};
+default_export qclear => sub    { \$Mock::Quick::Util::CLEAR };
+default_export qmeth  => sub(&) { Mock::Quick::Method->new(@_) };
 
 purge_util();
 

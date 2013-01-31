@@ -7,6 +7,7 @@ use Carp ();
 sub new {
     my $class = shift;
     my ($sub) = @_;
+    return $sub if eval {$sub->isa($class)};
     Carp::croak "Constructor to $class takes a single codeblock"
         unless ref $sub eq 'CODE';
     return bless $sub, $class;

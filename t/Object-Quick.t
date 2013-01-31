@@ -11,8 +11,6 @@ BEGIN {
         print STDERR $msg unless $msg =~ m/Object::Quick is depricated/;
     };
 
-    warn "foo";
-
     require_ok('Object::Quick');
     Object::Quick->import();
     ok( !__PACKAGE__->can($_), "$_ not imported" ) for qw/obj method clear/;

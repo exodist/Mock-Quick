@@ -11,6 +11,8 @@ BEGIN {
     can_ok( __PACKAGE__, qw/ qobj qclass qtakeover qclear qmeth /);
 
     package Foo;
+
+    package Foo::Test::Me;
 }
 
 tests object => sub {
@@ -72,6 +74,21 @@ tests class => sub {
     can_ok( 'Foox', 'new' );
     $three->undefine();
     throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
+
+    my $inst = bless {}, 'Foo::Test::Me';
+    my $four = qtakeover $inst => ( foo => sub { 1 });
+    is( $inst->foo, 1, "Overrode the class from the instance" );
+
+    my @warn;
+    {
+        local $SIG{__WARN__} = sub { push @warn => @_ };
+        qtakeover 'foo' => ( xxx => 'noop' );
+    }
+    like(
+        $warn[0],
+        qr/Return value is ignored, your mock is destroyed as soon as it is created/,
+        "Warned about no-op"
+    );
 };
 
 run_tests;

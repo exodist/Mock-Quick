@@ -7,13 +7,47 @@ use Mock::Quick::Object;
 use Mock::Quick::Object::Control;
 use Mock::Quick::Method;
 use Mock::Quick::Util;
+use Carp qw/carp/;
 
-our $VERSION = '1.105';
+our $VERSION = '1.106';
 
-default_export qclass     => sub { Mock::Quick::Class->new(@_) };
-default_export qtakeover  => sub { Mock::Quick::Class->takeover(@_) };
-default_export qimplement => sub { Mock::Quick::Class->implement(@_) };
-default_export qcontrol   => sub { Mock::Quick::Object::Control->new(@_) };
+import_arguments qw/intercept/;
+
+sub after_import {
+    my $class = shift;
+    my ( $importer, $specs ) = @_;
+
+    return unless $specs->config->{intercept};
+
+    my $intercept = $specs->config->{intercept};
+    no strict 'refs';
+    *{"$importer\::QINTERCEPT"} = sub { $intercept };
+}
+
+my %CLASS_RELATED = (
+    qclass     => 'new',
+    qtakeover  => 'takeover',
+    qimplement => 'implement',
+);
+
+for my $operation ( keys %CLASS_RELATED ) {
+    my $meth = $CLASS_RELATED{$operation};
+
+    default_export $operation => sub {
+        my @args = @_;
+
+        return Mock::Quick::Class->$meth(@args)
+            if defined wantarray;
+
+        my $caller = caller;
+        return $caller->QINTERCEPT->(sub { Mock::Quick::Class->$meth(@args) })
+            if $caller->can( 'QINTERCEPT' );
+
+        carp "Return value is ignored, your mock is destroyed as soon as it is created.";
+    };
+}
+
+default_export qcontrol => sub { Mock::Quick::Object::Control->new(@_) };
 
 default_export qobj => sub {
     my $obj     = Mock::Quick::Object->new(@_);

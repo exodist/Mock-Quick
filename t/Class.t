@@ -4,6 +4,7 @@ use strict;
 use warnings;
 
 use Test::More;
+use Test::Exception;
 use Fennec::Lite random => 0;
 use Mock::Quick::Method;
 
@@ -11,12 +12,14 @@ our $CLASS;
 
 BEGIN {
     $CLASS = 'Mock::Quick::Class';
-    use_ok( $CLASS );
+    use_ok($CLASS);
 
     package Foo;
     1;
+
     package Bar;
     1;
+
     package Baz;
     sub foo { 'foo' }
     sub bar { 'bar' }
@@ -37,7 +40,7 @@ tests create => sub {
     $obj = $CLASS->new( -subclass => 'Foo' );
     isa_ok( $obj, $CLASS );
     is( $obj->package, "$CLASS\::__ANON__\::AAAAAAAAAB", "Second package" );
-    ok( !$obj->package->can( 'new' ), "no new" );
+    ok( !$obj->package->can('new'), "no new" );
     isa_ok( $obj->package, 'Foo' );
 
     $obj = $CLASS->new( -subclass => [qw/Foo Bar/] );
@@ -49,29 +52,29 @@ tests create => sub {
     $obj = $CLASS->new( -with_new => 1, -attributes => [qw/a b c/] );
     can_ok( $obj->package, qw/a b c/ );
     my $one = $obj->package->new;
-    $one->a( 'a' );
+    $one->a('a');
     is( $one->a, 'a', "get/set" );
 };
 
 tests override => sub {
     my $obj = $CLASS->new( foo => 'bar' );
-    is ( $obj->package->foo, 'bar', "original value" );
-    $obj->override( 'foo', sub { 'baz' });
+    is( $obj->package->foo, 'bar', "original value" );
+    $obj->override( 'foo', sub { 'baz' } );
     is( $obj->package->foo, 'baz', "overriden" );
-    $obj->restore( 'foo' );
+    $obj->restore('foo');
     is( $obj->package->foo, 'bar', "original value" );
 
-    $obj->override( bub => Mock::Quick::Method->new( sub { print "VVV\n", return [@_] }));
+    $obj->override( bub => Mock::Quick::Method->new( sub { print "VVV\n", return [@_] } ) );
     is_deeply(
         $obj->package->bub( 'a', 'b' ),
-        [ $obj->package, 'a', 'b' ],
+        [$obj->package, 'a', 'b'],
         "got args"
     );
 
-    $obj->override( 'bar', sub { 'xxx' });
+    $obj->override( 'bar', sub { 'xxx' } );
     is( $obj->package->bar, 'xxx', "overriden" );
-    $obj->restore( 'bar' );
-    ok( !$obj->package->can( 'bar' ), "original value is nill" );
+    $obj->restore('bar');
+    ok( !$obj->package->can('bar'), "original value is nill" );
 
     # Multiple overrides
     $obj->override( foo => sub { 'foo' }, bar => sub { 'bar' } );
@@ -88,29 +91,32 @@ tests undefine => sub {
     $obj->undefine;
     no strict 'refs';
     ok( !keys %{$obj->package . '::'}, "anon package undefined" );
-    ok( !$obj->package->can( 'foo' ), "no more foo method" );
+    ok( !$obj->package->can('foo'),    "no more foo method" );
 };
 
 tests takeover => sub {
-    my $obj = $CLASS->takeover( 'Baz' );
+    my $obj = $CLASS->takeover('Baz');
     is( Baz->foo, 'foo', 'original' );
-    $obj->override( 'foo', sub { 'new foo' });
+    $obj->override( 'foo', sub { 'new foo' } );
     is( Baz->foo, 'new foo', "override" );
-    $obj->restore( 'foo' );
+    $obj->restore('foo');
     is( Baz->foo, 'foo', 'original' );
 
     $obj = $CLASS->new( -takeover => 'Baz' );
     is( Baz->foo, 'foo', 'original' );
-    $obj->override( 'foo', sub { 'new foo' });
+    $obj->override( 'foo', sub { 'new foo' } );
     is( Baz->foo, 'new foo', "override" );
     $obj = undef;
     is( Baz->foo, 'foo', 'original' );
 
     $obj = $CLASS->new( -takeover => 'Baz' );
-    $obj->override( 'foo', sub {
-        my $class = shift;
-        return "PREFIX: " . $class->MQ_CONTROL->original( 'foo' )->();
-    });
+    $obj->override(
+        'foo',
+        sub {
+            my $class = shift;
+            return "PREFIX: " . $class->MQ_CONTROL->original('foo')->();
+        }
+    );
 
     is( Baz->foo, "PREFIX: foo", "Override and accessed original through MQ_CONTROL" );
     $obj = undef;
@@ -124,7 +130,7 @@ tests implement => sub {
     lives_ok { require Foox; 1 } "Did not try to load Foox";
     can_ok( 'Foox', 'new' );
     $obj->undefine();
-    throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
+    throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/, "try to load Foox";
     $obj = undef;
 
     $obj = $CLASS->new( -implement => 'Foox', a => sub { 'a' }, -with_new => 1 );
@@ -132,7 +138,7 @@ tests implement => sub {
     can_ok( 'Foox', 'new' );
     ok( $obj, "Keeping it in scope." );
     $obj = undef;
-    throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/,  "try to load Foox";
+    throws_ok { require Foox; 1 } qr/Can't locate Foox\.pm/, "try to load Foox";
 };
 
 run_tests;

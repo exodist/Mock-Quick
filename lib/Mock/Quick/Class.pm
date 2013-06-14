@@ -21,7 +21,8 @@ sub metrics {
 
 sub takeover {
     my $class = shift;
-    my ( $package, %params ) = @_;
+    my ( $proto, %params ) = @_;
+    my $package = blessed( $proto ) || $proto;
 
     my $self = bless( { -package => $package, -takeover => 1 }, $class );
 

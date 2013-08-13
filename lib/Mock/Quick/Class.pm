@@ -147,6 +147,8 @@ sub _configure_pair {
     elsif ( $param eq '-with_new' ) {
         inject( $package, 'new', sub {
             my $class = shift;
+            croak "Expected hash, received reference to hash"
+                if @_ == 1 and ref $_[0] eq 'HASH';
             my %proto = @_;
             $metrics->{new}++;
 

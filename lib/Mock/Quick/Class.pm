@@ -330,7 +330,7 @@ You can also use the 'implement' method instead of new:
 
 This is if you just need to generate a class where the package name does not
 matter. This is done when the -takeover and -implement arguments are both
-ommited.
+omitted.
 
     use Mock::Quick::Class;
 
@@ -393,7 +393,7 @@ You can also do this through new()
 
 While the control object exists, it can be accessed via
 C<YOUR::PACKAGE->MQ_CONTROL()>. It is important to note that this method will
-dissapear whenever the control object you track falls out of scope.
+disappear whenever the control object you track falls out of scope.
 
 Example (taken from Class.t):
 

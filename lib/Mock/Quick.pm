@@ -100,14 +100,14 @@ Mock-Quick is here to solve the current problems with Mocking libraries.
 There are a couple Mocking libraries available on CPAN. The primary problems
 with these libraries include verbose syntax, and most importantly side-effects.
 Some Mocking libraries expect you to mock a specific class, and will unload it
-then redefine it. This is particularily a problem if you only want to override
+then redefine it. This is particularly a problem if you only want to override
 a class on a lexical level.
 
 Mock-Object provides a declarative mocking interface that results in a very
-concise, but clear syntax. There are seperate facilities for mocking object
+concise, but clear syntax. There are separate facilities for mocking object
 instances, and classes. You can quickly create an instance of an object with
 custom attributes and methods. You can also quickly create an anonymous class,
-optionally inhereting from another, with whatever methods you desire.
+optionally inheriting from another, with whatever methods you desire.
 
 Mock-Object also provides a tool that provides an OO interface to overriding
 methods in existing classes. This tool also allows for the restoration of the
@@ -216,7 +216,7 @@ you use strict mocking, or choose not to import qmeth() and qclear().
 =head2 MOCKING CLASSES
 
 B<Note:> the control object returned here is of type L<Mock::Quick::Class>,
-wheras control objects for qobj style objects are of
+whereas control objects for qobj style objects are of
 L<Mock::Quick::Object::Control>.
 
 =head3 IMPLEMENT A CLASS
@@ -272,7 +272,7 @@ You can also use the qimplement() method instead of qclass:
 
 This is if you just need to generate a class where the package name does not
 matter. This is done when the -takeover and -implement arguments are both
-ommited.
+omitted.
 
     use Mock::Quick;
 
@@ -338,7 +338,7 @@ where keys are method names, and values are the number of times the method has
 been called. When a method is altered or removed the key is deleted.
 
 Metrics only apply to mocked methods. When you takeover an already loaded class
-metrics will only track overriden methods.
+metrics will only track overridden methods.
 
 =head1 EXPORTS
 
@@ -361,7 +361,7 @@ See L<Mock::Quick::Object> for more.
 
 =item ( $obj, $control ) = qstrictc( attribute => value, ... )
 
-Create a stricter object, get/set accessors will not autovivify into existance
+Create a stricter object, get/set accessors will not autovivify into existence
 for undefined attributes.
 
 =item $control = qclass( -config => ..., name => $value || sub { ... }, ... )

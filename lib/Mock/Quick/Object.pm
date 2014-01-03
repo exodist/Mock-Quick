@@ -54,7 +54,7 @@ alt_meth can => (
 );
 
 # http://perldoc.perl.org/perlobj.html#Default-UNIVERSAL-methods
-# DOES is equivilent to isa by default
+# DOES is equivalent to isa by default
 sub isa     { no warnings 'misc'; goto &UNIVERSAL::isa     }
 sub DOES    { goto &isa                                    }
 sub VERSION { no warnings 'misc'; goto &UNIVERSAL::VERSION }

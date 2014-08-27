@@ -9,14 +9,14 @@ DESCRIPTION
     problems with these libraries include verbose syntax, and most
     importantly side-effects. Some Mocking libraries expect you to mock a
     specific class, and will unload it then redefine it. This is
-    particularily a problem if you only want to override a class on a
-    lexical level.
+    particularly a problem if you only want to override a class on a lexical
+    level.
 
     Mock-Object provides a declarative mocking interface that results in a
-    very concise, but clear syntax. There are seperate facilities for
+    very concise, but clear syntax. There are separate facilities for
     mocking object instances, and classes. You can quickly create an
     instance of an object with custom attributes and methods. You can also
-    quickly create an anonymous class, optionally inhereting from another,
+    quickly create an anonymous class, optionally inheriting from another,
     with whatever methods you desire.
 
     Mock-Object also provides a tool that provides an OO interface to
@@ -113,7 +113,7 @@ SYNOPSIS
 
   MOCKING CLASSES
     Note: the control object returned here is of type Mock::Quick::Class,
-    wheras control objects for qobj style objects are of
+    whereas control objects for qobj style objects are of
     Mock::Quick::Object::Control.
 
    IMPLEMENT A CLASS
@@ -168,7 +168,7 @@ SYNOPSIS
    ANONYMOUS MOCKED CLASS
     This is if you just need to generate a class where the package name does
     not matter. This is done when the -takeover and -implement arguments are
-    both ommited.
+    both omitted.
 
         use Mock::Quick;
 
@@ -233,7 +233,7 @@ METRICS
     is deleted.
 
     Metrics only apply to mocked methods. When you takeover an already
-    loaded class metrics will only track overriden methods.
+    loaded class metrics will only track overridden methods.
 
 EXPORTS
     Mock-Quick uses Exporter::Declare. This allows for exports to be
@@ -252,7 +252,7 @@ EXPORTS
     $obj = qstrict( attribute => value, ... )
     ( $obj, $control ) = qstrictc( attribute => value, ... )
         Create a stricter object, get/set accessors will not autovivify into
-        existance for undefined attributes.
+        existence for undefined attributes.
 
     $control = qclass( -config => ..., name => $value || sub { ... }, ... )
         Define an anonymous package with the desired methods and

@@ -6,6 +6,7 @@ use Mock::Quick::Util;
 use Scalar::Util qw/blessed weaken/;
 use Carp qw/croak confess carp/;
 
+our @CARP_NOT = ('Mock::Quick', 'Mock::Quick::Object');
 our $ANON = 'AAAAAAAAAA';
 
 sub package      { shift->{'-package'}  }

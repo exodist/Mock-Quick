@@ -4,7 +4,7 @@ use warnings;
 
 use Mock::Quick::Util;
 use Scalar::Util qw/blessed weaken/;
-use Carp qw/croak confess/;
+use Carp qw/croak confess carp/;
 
 our $ANON = 'AAAAAAAAAA';
 
@@ -179,6 +179,9 @@ sub override {
 
     for my $name ( keys %pairs ) {
         my $orig_value = $pairs{$name};
+
+        carp "Overriding non-existent method '$name'"
+            if $self->is_takeover && !$package->can($name);
 
         my $real_value = _is_sub_ref( $orig_value )
             ? sub { $metrics->{$name}++; return $orig_value->(@_) }

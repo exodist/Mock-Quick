@@ -123,6 +123,15 @@ tests takeover => sub {
 
     is( Baz->foo, 'foo', 'original' );
     ok( !Baz->can('MQ_CONTROL'), "Removed control" );
+
+    $obj = $CLASS->takeover('Baz');
+    my @warnings;
+    {
+        local $SIG{__WARN__} = sub { push @warnings => @_ };
+        $obj->override('not_implemented', sub { 'xxx' });
+    }
+    is(@warnings, 1, "got a warnings");
+    like($warnings[0], qr/Overriding non-existent method 'not_implemented'/, "Warning is what we wanted");
 };
 
 tests implement => sub {

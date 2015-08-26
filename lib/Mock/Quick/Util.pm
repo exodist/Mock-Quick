@@ -41,7 +41,7 @@ sub call {
             unless exists $self->{$name};
     }
 
-    if ( @_ && ref $_[0] && $_[0] == \$CLEAR ) {
+    if ( @_ && ref $_[0] && "$_[0]" eq "" . \$CLEAR ) {
         delete $self->{ $name };
         delete $control->metrics->{$name};
         return;

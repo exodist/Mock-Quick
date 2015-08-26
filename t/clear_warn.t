@@ -3,6 +3,13 @@ use warnings;
 
 use Test::More;
 
+BEGIN {
+    unless(eval { require Path::Class; 1 }) {
+        Test::More->import(skip_all => 'Path::Class is needed for this test');
+        exit 0;
+    }
+}
+
 use Mock::Quick;
 use Path::Class;
 

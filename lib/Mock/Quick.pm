@@ -9,7 +9,7 @@ use Mock::Quick::Method;
 use Mock::Quick::Util;
 use Carp qw/carp/;
 
-our $VERSION = '1.110';
+our $VERSION = '1.111';
 
 import_arguments qw/intercept/;
 
